@@ -997,3 +997,86 @@ def test_crlf_source_gives_the_same_line_numbers():
     assert [p["line"] for p in extract_ports_vhdl(crlf)] == [p["line"] for p in extract_ports_vhdl(LINE_VHDL)]
     assert [p["line"] for p in extract_ports_sv(LINE_SV.replace("\n", "\r\n"))] == \
         [p["line"] for p in extract_ports_sv(LINE_SV)]
+
+
+# ── several ports on one line ────────────────────────────────────────────────
+
+SV_MANY = """\
+module m (
+    input  logic clk, input logic rst,
+    input  logic [7:0] a, b, c,
+    output logic q1, q2,
+    input  wire x, output reg y
+);
+endmodule
+"""
+
+
+def _sv(text):
+    return [(p["name"], p["dir"], p["type"], p["range"], p["line"]) for p in extract_ports_sv(text)]
+
+
+def test_sv_two_declarations_on_one_line_are_both_ports():
+    got = _sv(SV_MANY)
+    assert ("clk", "in", "logic", "", 2) in got and ("rst", "in", "logic", "", 2) in got
+
+
+def test_sv_a_name_list_shares_the_direction_type_and_range():
+    got = _sv(SV_MANY)
+    for name in ("a", "b", "c"):
+        assert (name, "in", "logic", "7:0", 3) in got
+    assert ("q1", "out", "logic", "", 4) in got and ("q2", "out", "logic", "", 4) in got
+
+
+def test_sv_mixed_directions_on_one_line_each_keep_their_own():
+    got = _sv(SV_MANY)
+    assert ("x", "in", "wire", "", 5) in got and ("y", "out", "reg", "", 5) in got
+
+
+def test_sv_ports_come_out_in_declaration_order_with_no_duplicates():
+    assert [p[0] for p in _sv(SV_MANY)] == ["clk", "rst", "a", "b", "c", "q1", "q2", "x", "y"]
+
+
+def test_sv_a_single_port_line_is_unchanged():
+    text = "module m (\n    // Clock.\n    input logic clk, // inline\n    input logic [W-1:0] d\n);\nendmodule\n"
+    ports = {p["name"]: p for p in extract_ports_sv(text)}
+    assert ports["clk"]["comment"] == "inline" and ports["d"]["range"] == "W-1:0"
+
+
+def test_sv_commas_inside_a_range_or_call_do_not_split_a_declaration():
+    text = "module m (\n    input logic [f(1,2):0] a, input logic b\n);\nendmodule\n"
+    assert [p["name"] for p in extract_ports_sv(text)] == ["a", "b"]
+
+
+def test_sv_comment_goes_to_the_first_port_above_and_the_last_port_inline():
+    text = "module m (\n    // The pair.\n    input logic a, input logic b, // Second.\n    input logic c\n);\nendmodule\n"
+    comments = {p["name"]: p["comment"] for p in extract_ports_sv(text)}
+    assert comments == {"a": "The pair.", "b": "Second.", "c": ""}
+
+
+def test_sv_the_end_of_the_port_list_on_the_last_line_is_not_a_port():
+    text = "module m (input logic a, input logic b);\nendmodule\n"
+    assert [p["name"] for p in extract_ports_sv(text)] == ["a", "b"]
+
+
+VHDL_MANY = """\
+entity e is port (
+    clk : in std_logic; rst : in std_logic;
+    a, b : in std_logic_vector(7 downto 0); q : out std_logic;
+    -- Last.
+    z : out std_logic
+); end entity e;
+"""
+
+
+def test_vhdl_two_declarations_on_one_line_are_both_ports():
+    ports = {p["name"]: p for p in extract_ports_vhdl(VHDL_MANY)}
+    assert list(ports) == ["clk", "rst", "a", "b", "q", "z"]
+    assert ports["rst"]["line"] == 2 and ports["q"]["dir"] == "out" and ports["q"]["line"] == 3
+    assert ports["a"]["range"] == "7 downto 0" and ports["z"]["comment"] == "Last."
+
+
+def test_vhdl_a_call_with_a_semicolon_free_range_still_reads_whole():
+    text = "entity e is port (\n    a : in unsigned(clog2(D) - 1 downto 0); b : in std_logic\n); end entity e;\n"
+    ports = {p["name"]: p["range"] for p in extract_ports_vhdl(text)}
+    assert ports == {"a": "clog2(D) - 1 downto 0", "b": ""}

@@ -38,7 +38,7 @@ import re
 import sys
 from pathlib import Path
 
-from hdl_scan import matching_paren
+from hdl_scan import matching_paren, split_top_level
 from hdl_text import safe_id, split_lines
 from sv_interfaces import collect_interfaces, find_interface_port
 
@@ -149,6 +149,45 @@ _VHDL_GENERIC_RE = re.compile(
 )
 
 
+def _spread_comments(count: int, preceding: str, inline: str) -> list[str]:
+    """
+    The description for each of `count` declarations that share one line.  One declaration
+    gets its inline comment, else the comment above (as ever).  With several, the comment
+    above belongs to the first and the trailing one to the last; none is guessed for the rest.
+    """
+    if count == 1:
+        return [inline or preceding]
+    return [preceding] + [""] * (count - 2) + [inline]
+
+
+def _sv_declared_ports(line: str) -> list[tuple[str, str, str, str]]:
+    """
+    (direction, type, range, name) for every port declared on one line of a SystemVerilog
+    port list: `input logic a, input logic b,` is two, and `input logic [7:0] a, b, c,` is
+    three, a bare name taking the direction, type and range of the declaration before it.
+    """
+    declared: list[tuple[str, str, str, str]] = []
+    shared: tuple[str, str, str] | None = None
+    code = re.sub(r"//.*", "", line)
+    if re.match(r"\s*(?:macromodule|module)\b", code):
+        # `module m #(...) (input logic a, ...` on one line: the ports start after the header.
+        opening = code.find("(")
+        if opening != -1 and code[:opening].rstrip().endswith("#"):
+            closing = matching_paren(code, opening)
+            opening = code.find("(", closing + 1) if closing is not None else -1
+        code = code[opening + 1:] if opening != -1 else ""
+    for chunk in split_top_level(code):
+        m = _SV_PORT_RE.match(chunk)
+        if m:
+            raw_dir = m.group(1).lower()
+            shared = ({"input": "in", "output": "out"}.get(raw_dir, raw_dir),
+                      (m.group(2) or "logic").lower(), (m.group(3) or "").strip())
+            declared.append((*shared, m.group(4)))
+        elif shared and (bare := re.match(r"\s*(\w+)", chunk)):
+            declared.append((*shared, bare.group(1)))
+    return declared
+
+
 def extract_ports_vhdl(text: str) -> list[dict]:
     """
     Extract port declarations from a VHDL entity.
@@ -164,29 +203,34 @@ def extract_ports_vhdl(text: str) -> list[dict]:
 
     for idx, line in enumerate(lines):
         code = re.sub(r"--.*", "", line)  # strip for matching
-        m = _VHDL_PORT_RE.search(code)
-        if not m:
+        found = []                        # one (match, range) per declaration on the line
+        for part in split_top_level(code, ";"):
+            m = _VHDL_PORT_RE.search(part)
+            if not m:
+                continue
+            # The regex's range stops at the first `)`; a range holding a call needs balancing.
+            range_text = (m.group(4) or "").strip()
+            opened = re.match(r"\s*\(", part[m.end(3):])
+            if opened:
+                open_idx = m.end(3) + opened.end() - 1
+                close = matching_paren(part, open_idx)
+                if close is not None:
+                    range_text = part[open_idx + 1:close].strip()
+            found.append((m, range_text))
+        if not found:
             continue
 
-        # The regex's range stops at the first `)`; a range holding a call needs balancing.
-        range_text = (m.group(4) or "").strip()
-        opened = re.match(r"\s*\(", code[m.end(3):])
-        if opened:
-            open_idx = m.end(3) + opened.end() - 1
-            close = matching_paren(code, open_idx)
-            if close is not None:
-                range_text = code[open_idx + 1:close].strip()
-
-        comment = _inline_comment_vhdl(line) or _preceding_comment(lines, idx, "--")
-        for name in [n.strip() for n in m.group(1).split(",")]:
-            ports.append({
-                "name":    name,
-                "dir":     m.group(2).lower(),
-                "type":    m.group(3).lower(),
-                "range":   range_text,
-                "comment": comment,
-                "line":    first_line + idx,
-            })
+        comments = _spread_comments(len(found), _preceding_comment(lines, idx, "--"), _inline_comment_vhdl(line))
+        for (m, range_text), comment in zip(found, comments):
+            for name in [n.strip() for n in m.group(1).split(",")]:
+                ports.append({
+                    "name":    name,
+                    "dir":     m.group(2).lower(),
+                    "type":    m.group(3).lower(),
+                    "range":   range_text,
+                    "comment": comment,
+                    "line":    first_line + idx,
+                })
 
     return ports
 
@@ -310,8 +354,8 @@ def extract_ports_sv(text: str, interface_names: set[str] | None = None) -> list
             pos += len(l) + 1
 
     for idx, line in enumerate(lines):
-        m = _SV_PORT_RE.match(line)
-        if not m:
+        declared = _sv_declared_ports(line)
+        if not declared:
             if spans and any(s <= line_starts[idx] < e for s, e in spans):
                 hit = find_interface_port(line, interface_names)
                 if hit:
@@ -330,18 +374,16 @@ def extract_ports_sv(text: str, interface_names: set[str] | None = None) -> list
                     })
             continue
 
-        comment = _inline_comment_sv(line) or _preceding_comment(lines, idx, "//")
-        # Normalise SV "input"/"output" to "in"/"out" to match VHDL convention
-        raw_dir = m.group(1).lower()
-        norm_dir = {"input": "in", "output": "out"}.get(raw_dir, raw_dir)
-        ports.append({
-            "name":    m.group(4),
-            "dir":     norm_dir,
-            "type":    (m.group(2) or "logic").lower(),
-            "range":   (m.group(3) or "").strip(),
-            "comment": comment,
-            "line":    idx + 1,
-        })
+        comments = _spread_comments(len(declared), _preceding_comment(lines, idx, "//"), _inline_comment_sv(line))
+        for (direction, ptype, prange, name), comment in zip(declared, comments):
+            ports.append({
+                "name":    name,
+                "dir":     direction,
+                "type":    ptype,
+                "range":   prange,
+                "comment": comment,
+                "line":    idx + 1,
+            })
 
     return ports
 
