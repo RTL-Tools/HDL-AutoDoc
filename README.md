@@ -538,6 +538,7 @@ html_theme_options = {
 | `make doc-scaffold` | Generate RST shells (runs hierarchy first) |
 | `make doc-extract` | Extract FSM + process + CDC + block docs (runs scaffold first) |
 | `make doc-reports` | Ingest build reports from `reports/` (or `$AUTODOC_REPORTS_DIR`) on their own; writes a placeholder page if there are none |
+| `make doc-coverage` | Documentation coverage page and statistics (ports and generics described, processes with WaveDrom/Mermaid, header, comment-to-code ratio, registers, testbenches, generated pages) plus `docs/hdl_autodoc/coverage.json`. A port or generic counts as described when its comment is not empty. `COVERAGE_STATS=0` keeps only the original table; `COVERAGE_MIN_PORTS=80`, `COVERAGE_MIN_GENERICS` and `COVERAGE_MIN_HEADERS` (percent) make the command fail below that, for CI |
 | `make doc-regs` | Generate register artifacts from `registers/regs_*.toml` (or `$AUTODOC_REGISTERS_DIR`) |
 | `make doc-html` | Full build → `docs/hdl_autodoc/_build/html/` |
 | `make doc-html ANNOTATED_SOURCE=0` | Omit the "Annotated Source" listing from entity pages (on by default) |

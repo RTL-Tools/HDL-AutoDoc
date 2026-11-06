@@ -17,6 +17,7 @@ __pycache__/
 **/docs/hdl_autodoc/overview.rst
 **/docs/hdl_autodoc/registers.rst
 **/docs/hdl_autodoc/coverage.rst
+**/docs/hdl_autodoc/coverage.json
 **/docs/hdl_autodoc/modules/
 **/docs/hdl_autodoc/synthesis/
 **/docs/hdl_autodoc/testbenches/

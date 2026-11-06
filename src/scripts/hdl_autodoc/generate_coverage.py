@@ -13,11 +13,16 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from doc_stats import ModuleStats, module_stats, summarise
+from parse_testbenches import discover_testbenches
 
 
 @dataclass
@@ -160,8 +165,74 @@ def _depth_first_order(hierarchy: dict) -> list[str]:
     return visited
 
 
-def main(hierarchy_json: Path, docs_dir: Path) -> None:
-    """Run coverage detection and write terminal output + coverage.rst."""
+def _pct(value: float | None) -> str:
+    return "–" if value is None else f"{value:.1f}%"
+
+
+def check_thresholds(summary: dict, *, ports=None, generics=None, headers=None) -> list[str]:
+    """One message per documented-percentage that is below its minimum.  A percentage over
+    nothing (no ports at all) cannot fall short."""
+    problems = []
+    for label, minimum in (("ports", ports), ("generics", generics), ("headers", headers)):
+        actual = summary[f"{label}_percent"]
+        if minimum is not None and actual is not None and actual < minimum:
+            problems.append(f"{label} described: {actual:.1f}% is below the required {minimum:g}%")
+    return problems
+
+
+def stats_rst(stats: list[ModuleStats], summary: dict, *, testbenches: int, tests: int, doc_pages: int) -> str:
+    """The 'Documentation statistics' section appended to coverage.rst."""
+    def ratio(s) -> str:
+        return "–" if s.comment_ratio is None else f"{s.comment_ratio:.2f}"
+
+    def frac(done: int, total: int) -> str:
+        return f"{done}/{total}" if total else "–"
+
+    rows = "\n".join(
+        "       <tr>"
+        f'<td><a href="modules/{s.name}/index.html">{s.name}</a></td>'
+        f"<td>{frac(s.ports_described, s.ports)}</td>"
+        f"<td>{frac(s.generics_described, s.generics)}</td>"
+        f"<td>{'✓' if s.has_header else '–'}</td>"
+        f"<td>{s.processes}</td><td>{s.wavedrom}</td><td>{s.mermaid}</td>"
+        f"<td>{s.comment_lines}/{s.code_lines} ({ratio(s)})</td>"
+        f"<td>{s.registers or '–'}</td></tr>"
+        for s in stats)
+    return (
+        "\n"
+        "Documentation statistics\n"
+        "------------------------\n"
+        "\n"
+        f"* {summary['modules']} modules, {summary['headers']} with a header description "
+        f"({_pct(summary['headers_percent'])})\n"
+        f"* Ports described: {summary['ports_described']} of {summary['ports']} ({_pct(summary['ports_percent'])})\n"
+        f"* Generics and parameters described: {summary['generics_described']} of {summary['generics']} "
+        f"({_pct(summary['generics_percent'])})\n"
+        f"* {summary['processes']} processes, {summary['wavedrom']} with a WaveDrom diagram, "
+        f"{summary['mermaid']} with a Mermaid diagram\n"
+        f"* {summary['comment_lines']} comment lines to {summary['code_lines']} code lines\n"
+        f"* {summary['registers']} registers\n"
+        f"* {testbenches} testbenches ({tests} tests)\n"
+        f"* {doc_pages} generated pages\n"
+        "\n"
+        ".. raw:: html\n"
+        "\n"
+        '   <table class="coverage-table">\n'
+        "     <thead>\n"
+        "       <tr><th>Module</th><th>Ports described</th><th>Generics described</th><th>Header</th>"
+        "<th>Processes</th><th>WaveDrom</th><th>Mermaid</th><th>Comment/code lines</th><th>Registers</th></tr>\n"
+        "     </thead>\n"
+        "     <tbody>\n"
+        f"{rows}\n"
+        "     </tbody>\n"
+        "   </table>\n"
+    )
+
+
+def main(hierarchy_json: Path, docs_dir: Path, *, stats: bool = True, registers_dir: Path | None = None,
+         tb_dir: Path | None = None, min_ports=None, min_generics=None, min_headers=None) -> int:
+    """Run coverage detection and write terminal output, coverage.rst and (with `stats`)
+    coverage.json.  Returns 1 when a minimum is not met, else 0."""
     with open(hierarchy_json) as f:
         hierarchy = json.load(f)
 
@@ -176,9 +247,29 @@ def main(hierarchy_json: Path, docs_dir: Path) -> None:
     print(format_terminal_table(results))
 
     rst = coverage_rst(results)
+    problems: list[str] = []
+    if stats:
+        registers = registers_dir if registers_dir is not None else Path(os.environ.get("AUTODOC_REGISTERS_DIR", "registers"))
+        support = hierarchy.get("support_files", [])
+        bus_groups = Path(docs_dir) / "bus_groups.toml"
+        per_module = [module_stats(n, hierarchy["modules"][n].get("file", ""), support, registers,
+                                   bus_groups if bus_groups.is_file() else None) for n in names]
+        summary = summarise(per_module)
+        benches = discover_testbenches(Path(tb_dir if tb_dir is not None else os.environ.get("AUTODOC_TB_DIR", "tb")),
+                                       set(names))
+        tests = sum(len(b.tests) for b in benches)
+        pages = sum(1 for p in Path(docs_dir).rglob("*.rst") if p.name != "coverage.rst")
+        summary.update(testbenches=len(benches), tests=tests, doc_pages=pages)
+        rst += stats_rst(per_module, summary, testbenches=len(benches), tests=tests, doc_pages=pages)
+        (Path(docs_dir) / "coverage.json").write_text(json.dumps(
+            {"summary": summary, "modules": [s.as_dict() for s in per_module]}, indent=2) + "\n")
+        problems = check_thresholds(summary, ports=min_ports, generics=min_generics, headers=min_headers)
     out = docs_dir / "coverage.rst"
     out.write_text(rst)
     print(f"\nWrote {out}")
+    for p in problems:
+        print(f"Coverage check failed: {p}", file=sys.stderr)
+    return 1 if problems else 0
 
 
 def coverage_rst(results: list[CoverageResult]) -> str:
@@ -245,7 +336,20 @@ def coverage_rst(results: list[CoverageResult]) -> str:
     )
 
 
+def _minimum(value: str | None) -> float | None:
+    return float(value) if value not in (None, "") else None
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit("Usage: generate_coverage.py <hierarchy.json> <docs_dir>")
-    main(Path(sys.argv[1]), Path(sys.argv[2]))
+    ap = argparse.ArgumentParser(description="Documentation coverage page and statistics.")
+    ap.add_argument("hierarchy_json", type=Path)
+    ap.add_argument("docs_dir", type=Path)
+    ap.add_argument("--no-stats", action="store_true", help="only the original table; no statistics, JSON or minimums")
+    ap.add_argument("--registers-dir", type=Path)
+    ap.add_argument("--tb-dir", type=Path)
+    ap.add_argument("--min-ports", type=_minimum, help="fail below this %% of ports described")
+    ap.add_argument("--min-generics", type=_minimum, help="fail below this %% of generics described")
+    ap.add_argument("--min-headers", type=_minimum, help="fail below this %% of modules with a header description")
+    a = ap.parse_args()
+    sys.exit(main(a.hierarchy_json, a.docs_dir, stats=not a.no_stats, registers_dir=a.registers_dir, tb_dir=a.tb_dir,
+                  min_ports=a.min_ports, min_generics=a.min_generics, min_headers=a.min_headers))

@@ -119,7 +119,8 @@ doc-help:
 	@echo "  make doc-scaffold             Generate RST shells (runs hierarchy first)"
 	@echo "  make doc-extract              Extract FSM + process docs (runs scaffold first)"
 	@echo "  make doc-extract FORCE=1      Force re-extraction of all modules (bypass cache)"
-	@echo "  make doc-coverage              Generate documentation coverage report"
+	@echo "  make doc-coverage              Documentation coverage + statistics (COVERAGE_STATS=0: table only;"
+	@echo "                                 COVERAGE_MIN_PORTS=80 / _GENERICS / _HEADERS fail below that percent)"
 	@echo "  make doc-html                 Build HTML documentation"
 	@echo "  make doc-html SCHEMATICS=0    Build HTML without RTL schematics (default: on, needs yosys)"
 	@echo "  make doc-html ANNOTATED_SOURCE=0  Omit the annotated source listing (default: on)"
@@ -183,9 +184,18 @@ doc-extract: doc-scaffold
 	$(PYTHON) $(AUTODOC_SCRIPTDIR)/generate_rst.py $(AUTODOC_SRCDIR) $(AUTODOC_SOURCEDIR) "$(PROJECT)" $(AUTODOC_GENRST_FLAGS)
 
 # ── Step 3b: doc-coverage report (opt-in, runs independently after extract) ──────
+# Besides the table it writes statistics (ports/generics described, diagrams, comment ratio,
+# registers, testbenches) and coverage.json.  COVERAGE_STATS=0 keeps only the table.
+# COVERAGE_MIN_PORTS / _GENERICS / _HEADERS=<percent> make the target fail (for CI) below that.
+COVERAGE_STATS ?= 1
 doc-coverage: doc-hierarchy
 	$(PYTHON) $(AUTODOC_SCRIPTDIR)/generate_coverage.py \
-		$(AUTODOC_HIERARCHY_JSON) $(AUTODOC_SOURCEDIR)
+		$(AUTODOC_HIERARCHY_JSON) $(AUTODOC_SOURCEDIR) \
+		$(if $(filter 0,$(COVERAGE_STATS)),--no-stats,--registers-dir $(call sh_quote,$(AUTODOC_REGISTERS_DIR)) \
+		--tb-dir $(call sh_quote,$(AUTODOC_TB_DIR)) \
+		$(if $(COVERAGE_MIN_PORTS),--min-ports $(COVERAGE_MIN_PORTS)) \
+		$(if $(COVERAGE_MIN_GENERICS),--min-generics $(COVERAGE_MIN_GENERICS)) \
+		$(if $(COVERAGE_MIN_HEADERS),--min-headers $(COVERAGE_MIN_HEADERS)))
 
 # ── Step 3c: synthesis/PnR report ingestion (opt-in, after CI generates reports/) ──
 doc-reports: doc-hierarchy

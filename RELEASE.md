@@ -1,5 +1,23 @@
 # Release Notes
 
+## v3.18.0
+
+#### New features
+
+- **Documentation statistics** — `make doc-coverage` now adds, below the existing table, per-module and project figures: ports and generics (parameters) described, processes with a WaveDrom or Mermaid diagram, header description present, comment-to-code line ratio, registers, testbenches and tests, and generated pages. They are also written to `docs/hdl_autodoc/coverage.json`. A port or generic counts as described when its comment is not empty; its length is not judged.
+- **Minimums for CI** — `COVERAGE_MIN_PORTS`, `COVERAGE_MIN_GENERICS` and `COVERAGE_MIN_HEADERS` (percent) make `make doc-coverage` fail when the documented share is lower. `COVERAGE_STATS=0` keeps only the original table and writes no JSON.
+- **VS Code extension: finds Python itself** — with `hdlAutodoc.pythonPath` empty it tries `python3`, `python`, `py -3`, versioned names and Homebrew's locations, and uses the first that is 3.11 or newer; the error names the versions it found. The setting accepts `~` and `${workspaceFolder}`, and a probe that hangs is stopped after five seconds.
+
+#### Fixes
+
+- **Several ports on one line** — `input logic a, b, c` (SystemVerilog) and `a, b : in std_logic; c : out std_logic` (VHDL) now give one port each in the block diagram, the port tables and `autodoc_json.py`; a trailing comment goes to the last port, a preceding one to the first.
+
+#### Compatibility
+
+- Backwards compatible: the coverage table's columns and totals are unchanged; the extra section and `coverage.json` are additional (`COVERAGE_STATS=0` removes them).
+
+---
+
 ## v3.17.0
 
 #### New features
