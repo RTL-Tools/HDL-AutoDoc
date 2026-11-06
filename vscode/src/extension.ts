@@ -61,7 +61,8 @@ export function activate(context: vscode.ExtensionContext): TestApi {
 
   const run = async (request: RunRequest, signal: AbortSignal) =>
     runAutodocJson({
-      python: settings().get<string>('pythonPath', 'python3'),
+      python: settings().get<string>('pythonPath', ''),
+      workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
       script,
       language: request.language,
       text: request.text,

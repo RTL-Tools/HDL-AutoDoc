@@ -41,7 +41,7 @@ not HDL leaves the last document in place and says so.
 
 | Setting | Default | |
 |---|---|---|
-| `hdlAutodoc.pythonPath` | `python3` | Python 3.11+ used to read the source |
+| `hdlAutodoc.pythonPath` | *(empty)* | Python 3.11+ used to read the source. Empty: the extension looks for one (`python3`, `python`, `py -3`, `python3.13`… and Homebrew's), skipping any older than 3.11. `~` and `${workspaceFolder}` are expanded |
 | `hdlAutodoc.refreshDelayMs` | `400` | Pause after the last keystroke before the preview refreshes |
 | `hdlAutodoc.browserPath` | *(empty)* | Chrome, Edge, Brave or Chromium used for the PDF export; empty looks in the usual places |
 

@@ -1,6 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +10,9 @@ const fake = fileURLToPath(new URL('./fixtures/fake-python', import.meta.url));
 const base = { python: fake, script: '/x/autodoc_json.py', language: 'vhdl', text: 'entity e is end;',
                support: [], timeoutMs: 5000 };
 
+let scratch;
 beforeEach(() => {
+  scratch = mkdtempSync(join(tmpdir(), 'runner-'));
   resetVersionCache();
   for (const k of ['FAKE_VERSION', 'FAKE_MODE', 'FAKE_PIDFILE', 'FAKE_PROBEFILE']) delete process.env[k];
 });
@@ -124,4 +126,112 @@ test('the runner works with the real autodoc_json.py', async () => {
   assert.equal(r.doc.module.name, 'sample_ctrl');
   assert.equal(r.doc.fsm.states.length, 4);
   assert.ok(r.doc.processes.some((p) => p.label === 'p_next_state' && p.mermaid.length === 1));
+});
+
+// ── finding a suitable Python when none is named ─────────────────────────────
+
+import { chmodSync } from 'node:fs';
+import { homedir } from 'node:os';
+
+/** An interpreter that reports `version`, as a small shell script that runs the fake. */
+function interpreter(name, version) {
+  const file = join(scratch, name);
+  writeFileSync(file, `#!/bin/sh\nFAKE_VERSION=${version} exec "${fake}" "$@"\n`);
+  chmodSync(file, 0o755);
+  return file;
+}
+const auto = (candidates, over = {}) =>
+  runAutodocJson({ ...base, python: '', candidates, ...over });
+
+test('with no interpreter named, the first candidate that is 3.11 or newer is used', async () => {
+  const old = interpreter('py39', '3.9');
+  const good = interpreter('py312', '3.12');
+  const later = interpreter('py313', '3.13');
+  const r = await auto([['/no/such/python'], [old], [good], [later]]);
+  assert.equal(r.ok, true, r.message);
+});
+
+test('candidates are tried in order and the one that ran is the first suitable one', async () => {
+  process.env.FAKE_PROBEFILE = join(scratch, 'probes');
+  const good = interpreter('py312', '3.12');
+  const later = interpreter('py313', '3.13');
+  await auto([[good], [later]]);
+  const probed = readFileSync(join(scratch, 'probes'), 'utf8').trim().split('\n').length;
+  assert.equal(probed, 1, 'the search stops at the first suitable interpreter');
+});
+
+test('a candidate with arguments (py -3) gets them before the script', async () => {
+  const launcher = interpreter('py', '3.12');
+  const r = await auto([[launcher, '-3']]);
+  assert.equal(r.ok, true, r.message);
+  assert.deepEqual(JSON.parse(r.doc.warnings[0]).slice(0, 2), ['-3', '/x/autodoc_json.py']);
+});
+
+test('only old interpreters: the message names each one found and the setting to change', async () => {
+  const a = interpreter('py39', '3.9');
+  const b = interpreter('py310', '3.10');
+  const r = await auto([[a], [b]]);
+  assert.equal(r.kind, 'old-python');
+  assert.match(r.message, /3\.9/);
+  assert.match(r.message, /3\.10/);
+  assert.match(r.message, /3\.11/);
+  assert.match(r.message, /hdlAutodoc\.pythonPath/);
+});
+
+test('no interpreter at all: the message says what was tried and names the setting', async () => {
+  const r = await auto([['/no/python-a'], ['/no/python-b']]);
+  assert.equal(r.kind, 'no-python');
+  assert.match(r.message, /python-a/);
+  assert.match(r.message, /hdlAutodoc\.pythonPath/);
+});
+
+test('an empty setting means "find one", not an error', async () => {
+  const good = interpreter('py312', '3.12');
+  assert.equal((await auto([[good]], { python: '   ' })).ok, true);
+});
+
+test('a named interpreter is used as it is and never replaced by a candidate', async () => {
+  const good = interpreter('py312', '3.12');
+  const r = await auto([[good]], { python: '/definitely/not/python' });
+  assert.equal(r.kind, 'no-python');
+  assert.match(r.message, /definitely\/not\/python/);
+});
+
+test('~ and ${workspaceFolder} in the setting are expanded', async () => {
+  const folder = mkdtempSync(join(tmpdir(), 'ws-'));
+  const venv = join(folder, '.venv');
+  mkdirSync(venv);
+  writeFileSync(join(venv, 'python'), `#!/bin/sh\nFAKE_VERSION=3.12 exec "${fake}" "$@"\n`);
+  chmodSync(join(venv, 'python'), 0o755);
+  const r = await auto([], { python: '${workspaceFolder}/.venv/python', workspaceFolder: folder });
+  assert.equal(r.ok, true, r.message);
+  const home = mkdtempSync(join(homedir(), '.hdl-autodoc-test-'));
+  try {
+    writeFileSync(join(home, 'python'), `#!/bin/sh\nFAKE_VERSION=3.12 exec "${fake}" "$@"\n`);
+    chmodSync(join(home, 'python'), 0o755);
+    const tilde = `~/${home.slice(homedir().length + 1)}/python`;
+    assert.equal((await auto([], { python: tilde })).ok, true);
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('a probe that never answers is given up on, and the search goes on', async () => {
+  const hanging = join(scratch, 'hang');
+  writeFileSync(hanging, `#!/bin/sh\nFAKE_PROBE_HANG=1 exec "${fake}" "$@"\n`);
+  chmodSync(hanging, 0o755);
+  const good = interpreter('py312', '3.12');
+  const started = Date.now();
+  const r = await auto([[hanging], [good]], { probeTimeoutMs: 1500 });   // a node start-up is ~0.3 s
+  assert.equal(r.ok, true, r.message);
+  assert.ok(Date.now() - started < 6000);
+});
+
+test('a hanging named interpreter is reported instead of leaving the panel blank', async () => {
+  const hanging = join(scratch, 'hang');
+  writeFileSync(hanging, `#!/bin/sh\nFAKE_PROBE_HANG=1 exec "${fake}" "$@"\n`);
+  chmodSync(hanging, 0o755);
+  const r = await auto([], { python: hanging, probeTimeoutMs: 1000 });
+  assert.equal(r.kind, 'no-python');
+  assert.match(r.message, /hdlAutodoc\.pythonPath/);
 });
