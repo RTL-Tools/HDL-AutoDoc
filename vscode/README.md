@@ -1,7 +1,7 @@
 # HDL AutoDoc for VS Code
 
 A live documentation preview for the VHDL or SystemVerilog file you are editing. It shows what the
-[HDL AutoDoc](https://github.com/FPGA-James/HDLAutoDoc) site will show for that module, as you type:
+[HDL AutoDoc](https://github.com/RTL-Tools/HDLAutoDoc) site will show for that module, as you type:
 
 - the header description, generics or parameters, and ports (with bus groups and interface ports),
 - instances, the state machine (diagram and transition table),

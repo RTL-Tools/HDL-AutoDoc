@@ -7,7 +7,7 @@
   "license": "SEE LICENSE IN ../README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FPGA-James/HDLAutoDoc.git"
+    "url": "https://github.com/RTL-Tools/HDLAutoDoc.git"
   },
   "engines": {
     "vscode": "^1.90.0"
