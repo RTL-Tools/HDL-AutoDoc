@@ -206,6 +206,10 @@ code --install-extension vscode/hdl-autodoc-*.vsix       # then: "HDL AutoDoc: S
 
 It needs Python 3.11+ on the `PATH` (nothing to `pip install`: the `.vsix` carries its own copy of the scripts) and is not published to the Marketplace; CI builds the `.vsix` on every push and keeps it as a build artifact. See [`vscode/README.md`](vscode/README.md) for settings and limits.
 
+### Neovim plugin (planned)
+
+A terminal counterpart of the VS Code preview — documentation in a split beside the buffer, waveforms drawn as Unicode, no browser — is being designed on the `neovim-plugin` branch. See [`nvim/README.md`](nvim/README.md) for what it will do and [the design](docs/superpowers/specs/2026-11-06-neovim-plugin-design.md).
+
 ---
 
 ## 🔧 How it works
