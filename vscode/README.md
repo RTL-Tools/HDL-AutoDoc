@@ -1,5 +1,7 @@
 # HDL-AutoDoc-Lite for VS Code
 
+> **Disclaimer:** this project, including its code, documentation and this README, was generated with AI (Claude, by Anthropic). It may contain mistakes: check the generated documentation against your own source before relying on it.
+
 A live documentation preview for the VHDL or SystemVerilog file you are editing. It shows what the
 [HDL AutoDoc](https://github.com/RTL-Tools/HDL-AutoDoc) site will show for that module, as you type:
 
@@ -11,6 +13,14 @@ A live documentation preview for the VHDL or SystemVerilog file you are editing.
 It uses the same extractors as the site build, so the preview and the generated documentation read your
 comments the same way. It works on unsaved text, follows the active editor, follows the editor theme, and
 clicking a port, generic, instance or process jumps to its line.
+
+## Install
+
+From the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=HDL-Tools.hdl-autodoc): search for **HDL-AutoDoc-Lite** in the Extensions view, or run
+
+```bash
+code --install-extension HDL-Tools.hdl-autodoc
+```
 
 ## Use
 
@@ -49,7 +59,9 @@ A SystemVerilog file that uses interfaces (`axis_if.slave s_axis`) is documented
 when the workspace holds the `interface` definition. Custom port groups are read from
 `docs/hdl_autodoc/bus_groups.toml` in the first workspace folder, as the site build does.
 
-## Install the `.vsix`
+## Install from a `.vsix`
+
+Each [GitHub release](https://github.com/RTL-Tools/HDL-AutoDoc/releases) carries the `.vsix`; or build it yourself (below).
 
 ```bash
 code --install-extension hdl-autodoc-<version>.vsix
@@ -74,5 +86,3 @@ user-data and extensions folders and never touch your settings.
 - RTL schematics (they need Yosys and netlistsvg), the register map, testbenches and build reports:
   those belong to the full site (`make doc-html`).
 - Descriptions are shown as plain text with ``code`` spans; other reStructuredText is not rendered.
-- A port declaration must be on its own line to be read (`input a, input b,` on one line yields only `a`).
-- Published to the Marketplace by `.github/workflows/publish.yaml` when a `v*` tag is pushed; the `.vsix` can also be installed from the GitHub release.

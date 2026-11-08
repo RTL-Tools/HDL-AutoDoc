@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/RTL-Tools/HDL-AutoDoc/actions/workflows/ci.yml/badge.svg)](https://github.com/RTL-Tools/HDL-AutoDoc/actions/workflows/ci.yml)
 
+> **Disclaimer:** this project, including its code, documentation and this README, was generated with AI (Claude, by Anthropic). It may contain mistakes: check the generated documentation against your own source before relying on it.
+
 > **Turn your VHDL and SystemVerilog source into beautiful, navigable documentation — automatically.**
 
 HDL AutoDoc is a zero-boilerplate documentation pipeline for hardware design projects. Drop your source files in, run `make doc-html`, and get a fully structured Sphinx site with block diagrams, FSM diagrams, timing waveforms, process pages, a hierarchy tree, a CDC analysis page per module, an embedded register map, and synthesis/place-and-route reports — all extracted directly from your HDL source and CI artifacts.
@@ -29,7 +31,7 @@ No separate doc files to maintain. No manual diagrams to draw. If it's in the so
 | **Register map** | Auto-embeds `registers/generated/*.html` — any register builder output supported |
 | **Testbenches** | Lists VUnit, cocotb, pyuvm and directed testbenches with their purpose and test counts, read from source — on by default (`TESTBENCHES=0` to skip) |
 | **Build reports** | Ingests Yosys/nextpnr (ECP5) and Vivado reports — summary, utilization, timing and warnings — on by default (`BUILD=0` to skip) |
-| **VS Code preview** | A live per-file preview in the editor from the same extractors — ports, FSM, processes with WaveDrom and Mermaid, CDC and reset — installed from a `.vsix` (see [VS Code extension](#vs-code-extension)) |
+| **VS Code preview** | A live per-file preview in the editor from the same extractors — ports, FSM, processes with WaveDrom and Mermaid, CDC and reset — installed from the Marketplace (see [VS Code extension](#vs-code-extension)) |
 | **Dark / light mode** | Built-in Furo toggle — persists across sessions, respects OS preference |
 | **Ctrl+K search** | Keyboard shortcut focuses the sidebar search input |
 | **PDF output** | Full LaTeX PDF via `make doc-pdf` |
@@ -200,11 +202,11 @@ The example, `example_full/`, shows **every feature at once** — a mixed VHDL /
 `vscode/` holds an extension that shows the documentation of the file you are editing, live, in a panel beside it: header, generics, ports, instances, the state machine, processes with their WaveDrom and Mermaid diagrams, and clock- and reset-domain analysis. It reads the source with the same extractors as the site build (through the new `autodoc_json.py`, which prints one JSON document per file), works on unsaved text, follows the editor theme, and exports the documentation as HTML, Markdown or PDF (the PDF needs Chrome, Edge, Brave or Chromium installed).
 
 ```bash
-make -C vscode vsix                                      # builds vscode/hdl-autodoc-<version>.vsix
-code --install-extension vscode/hdl-autodoc-*.vsix       # then: "HDL AutoDoc: Show documentation"
+code --install-extension HDL-Tools.hdl-autodoc           # from the Marketplace; then: "HDL-AutoDoc-Lite: Show documentation"
+make -C vscode vsix                                      # or build vscode/hdl-autodoc-<version>.vsix yourself
 ```
 
-It needs Python 3.11+ on the `PATH` (nothing to `pip install`: the `.vsix` carries its own copy of the scripts) and is not published to the Marketplace; CI builds the `.vsix` on every push and keeps it as a build artifact. See [`vscode/README.md`](vscode/README.md) for settings and limits.
+It needs Python 3.11+ on the `PATH` (nothing to `pip install`: the `.vsix` carries its own copy of the scripts) and is published to the Marketplace as **HDL-AutoDoc-Lite** when a `v*` tag is pushed (`.github/workflows/publish.yaml`); each release also carries the `.vsix`, and CI builds one on every push. See [`vscode/README.md`](vscode/README.md) for settings and limits.
 
 ### Neovim plugin (planned)
 

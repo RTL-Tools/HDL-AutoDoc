@@ -1,5 +1,17 @@
 # Release Notes
 
+## v3.18.4
+
+#### Changes
+
+- **READMEs** — the VS Code extension is documented as published on the Marketplace (`HDL-Tools.hdl-autodoc`), and all three READMEs carry a disclaimer that the project was generated with AI.
+
+#### Compatibility
+
+- Backwards compatible: documentation only; the extension is republished unchanged at the new version.
+
+---
+
 ## v3.18.3
 
 #### Changes

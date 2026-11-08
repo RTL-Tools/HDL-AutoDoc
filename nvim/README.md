@@ -1,5 +1,7 @@
 # HDL AutoDoc for Neovim
 
+> **Disclaimer:** this project, including its code, documentation and this README, was generated with AI (Claude, by Anthropic). It may contain mistakes: check the generated documentation against your own source before relying on it.
+
 > **Status: planned, not yet usable.** This describes what the plugin will do; the design is in
 > [`docs/superpowers/specs/2026-11-06-neovim-plugin-design.md`](../docs/superpowers/specs/2026-11-06-neovim-plugin-design.md).
 > The command names and options below may still change. For VS Code see [`../vscode/README.md`](../vscode/README.md).
