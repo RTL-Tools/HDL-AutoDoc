@@ -109,7 +109,7 @@ async function resolveInterpreter(o: RunOptions): Promise<Resolved> {
   const need = `Set hdlAutodoc.pythonPath to a Python ${MIN_MAJOR}.${MIN_MINOR} or newer.`;
   if (old.length > 0) {
     return { ok: false, kind: 'old-python',
-      message: `HDL AutoDoc needs Python ${MIN_MAJOR}.${MIN_MINOR} or newer, but only older ones were found (${old.join('; ')}). ${need}` };
+      message: `HDL-AutoDoc-Lite needs Python ${MIN_MAJOR}.${MIN_MINOR} or newer, but only older ones were found (${old.join('; ')}). ${need}` };
   }
   return { ok: false, kind: 'no-python',
     message: named ? `Could not run "${named}". ${need}`

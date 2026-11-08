@@ -1,6 +1,6 @@
 # 📟 HDL AutoDoc
 
-[![CI](https://github.com/RTL-Tools/HDLAutoDoc/actions/workflows/ci.yml/badge.svg)](https://github.com/RTL-Tools/HDLAutoDoc/actions/workflows/ci.yml)
+[![CI](https://github.com/RTL-Tools/HDL-AutoDoc/actions/workflows/ci.yml/badge.svg)](https://github.com/RTL-Tools/HDL-AutoDoc/actions/workflows/ci.yml)
 
 > **Turn your VHDL and SystemVerilog source into beautiful, navigable documentation — automatically.**
 
@@ -131,7 +131,7 @@ If yosys or the GHDL plugin is absent, schematic generation is **skipped silentl
 The tool is **not copied into your project**. It lives in `third_party/hdl_autodoc/` (a git submodule) and your project's Makefile includes one file from it, so every documentation target has a single source. From a checkout of this repo:
 
 ```bash
-git clone https://github.com/RTL-Tools/HDLAutoDoc.git hdl-autodoc
+git clone https://github.com/RTL-Tools/HDL-AutoDoc.git hdl-autodoc
 ./hdl-autodoc/install.sh /path/to/your/hdl-project            # git submodule
 ./hdl-autodoc/install.sh /path/to/your/hdl-project --vendor   # or copy src/ in (no git needed)
 ```
@@ -184,7 +184,7 @@ make doc-html PROJECT="My FPGA Design"
 
 ### Try the example
 
-**Live:** the example project, built from `main`, is at [rtl-tools.github.io/HDLAutoDoc](https://rtl-tools.github.io/HDLAutoDoc/) (without the RTL schematics, which need Yosys). Its built HTML is also in the repository, so after cloning you can open `example_full/docs/hdl_autodoc/_build/html/index.html` without building anything.
+**Live:** the example project, built from `main`, is at [rtl-tools.github.io/HDL-AutoDoc](https://rtl-tools.github.io/HDL-AutoDoc/) (without the RTL schematics, which need Yosys). Its built HTML is also in the repository, so after cloning you can open `example_full/docs/hdl_autodoc/_build/html/index.html` without building anything.
 
 The example, `example_full/`, shows **every feature at once** — a mixed VHDL / SystemVerilog sampler for ECP5 (`make doc-venv && make doc-html` from that directory; the PDF shows its Mermaid diagrams when `mmdc` is installed):
 
@@ -754,7 +754,7 @@ Done. The new module appears in the overview (tree and table), navigation, and g
 
 ## 📋 Release notes
 
-Each release's notes are in [RELEASE.md](RELEASE.md) and on the [releases page](https://github.com/RTL-Tools/HDLAutoDoc/releases).
+Each release's notes are in [RELEASE.md](RELEASE.md) and on the [releases page](https://github.com/RTL-Tools/HDL-AutoDoc/releases).
 
 ---
 

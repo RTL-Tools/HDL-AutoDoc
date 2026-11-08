@@ -26,7 +26,7 @@ exports.run = async function run() {
   const config = vscode.workspace.getConfiguration('hdlAutodoc');
   await config.update('refreshDelayMs', 50, vscode.ConfigurationTarget.Global);
 
-  const extension = vscode.extensions.getExtension('local.hdl-autodoc');
+  const extension = vscode.extensions.getExtension('HDL-Tools.hdl-autodoc');
   assert.ok(extension, 'the extension is not installed in the test host');
   const api = await extension.activate();
   detail = () => api.lastHtml();

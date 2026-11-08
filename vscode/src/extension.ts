@@ -134,10 +134,10 @@ export function activate(context: vscode.ExtensionContext): TestApi {
     try {
       const html = path.join(dir, 'page.html');
       fs.writeFileSync(html, exportPage(exportName(), body, fs.readFileSync(path.join(context.extensionPath, 'dist', 'panel.css'), 'utf8')));
-      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'HDL AutoDoc: exporting PDF…' },
+      const result = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'HDL-AutoDoc-Lite: exporting PDF…' },
         () => printToPdf({ browser, html, pdf: target.fsPath, timeoutMs: 60000 }));
       if (result.ok) exported(target);
-      else void vscode.window.showErrorMessage(`HDL AutoDoc: PDF export failed. ${result.message}`);
+      else void vscode.window.showErrorMessage(`HDL-AutoDoc-Lite: PDF export failed. ${result.message}`);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
@@ -145,7 +145,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
 
   async function saveMarkdown(): Promise<void> {
     if (!lastDoc) {
-      void vscode.window.showInformationMessage('HDL AutoDoc: there is no documentation to export yet. Open an HDL file and show the documentation first.');
+      void vscode.window.showInformationMessage('HDL-AutoDoc-Lite: there is no documentation to export yet. Open an HDL file and show the documentation first.');
       return;
     }
     const doc = lastDoc;
@@ -187,7 +187,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
     }
     const dist = vscode.Uri.joinPath(context.extensionUri, 'dist');
     panel = vscode.window.createWebviewPanel(
-      'hdlAutodoc', 'HDL AutoDoc', { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
+      'hdlAutodoc', 'HDL-AutoDoc-Lite', { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
       { enableScripts: true, localResourceRoots: [dist], retainContextWhenHidden: true });
     ready = false;
     session = new Session({ run, post: send, delayMs: () => settings().get<number>('refreshDelayMs', 400) });

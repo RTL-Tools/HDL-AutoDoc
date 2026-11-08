@@ -1,0 +1,36 @@
+# Push a tag like v3.18.0 to test, build, publish the HDL-AutoDoc-Lite extension to the Marketplace and attach the .vsix to the GitHub release.
+# The extension is released with the tool, so the tag is the tool's release tag and must equal vscode/package.json's version.
+# Marketplace auth is trusted publishing (OIDC): the publisher HDL-Tools has a policy naming this repo and this exact filename (publish.yaml), so there is no token secret.
+name: Publish
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # GitHub release
+      id-token: write   # OIDC token for Marketplace trusted publishing
+    defaults:
+      run:
+        working-directory: vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Tag must match package.json version
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: make vsix
+      - name: Publish to Marketplace
+        run: npx --yes @vscode/vsce@4.1.0 publish --oidc --packagePath hdl-autodoc-*.vsix
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # the release may already exist (notes written by hand): then only attach the .vsix
+        run: gh release upload "$GITHUB_REF_NAME" hdl-autodoc-*.vsix --clobber || gh release create "$GITHUB_REF_NAME" hdl-autodoc-*.vsix --title "HDL-AutoDoc-Lite $GITHUB_REF_NAME" --generate-notes

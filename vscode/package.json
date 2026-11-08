@@ -1,13 +1,13 @@
 {
   "name": "hdl-autodoc",
-  "displayName": "HDL AutoDoc",
+  "displayName": "HDL-AutoDoc-Lite",
   "description": "Live documentation preview for VHDL and SystemVerilog files, from the same extractors as the HDL AutoDoc site.",
   "version": "3.18.0",
-  "publisher": "local",
+  "publisher": "HDL-Tools",
   "license": "SEE LICENSE IN ../README.md",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RTL-Tools/HDLAutoDoc.git"
+    "url": "https://github.com/RTL-Tools/HDL-AutoDoc.git"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -23,24 +23,24 @@
     "commands": [
       {
         "command": "hdlAutodoc.showDocumentation",
-        "title": "HDL AutoDoc: Show documentation",
+        "title": "HDL-AutoDoc-Lite: Show documentation",
         "icon": "$(open-preview)"
       },
       {
         "command": "hdlAutodoc.exportHtml",
-        "title": "HDL AutoDoc: Export documentation as HTML"
+        "title": "HDL-AutoDoc-Lite: Export documentation as HTML"
       },
       {
         "command": "hdlAutodoc.exportMarkdown",
-        "title": "HDL AutoDoc: Export documentation as Markdown"
+        "title": "HDL-AutoDoc-Lite: Export documentation as Markdown"
       },
       {
         "command": "hdlAutodoc.exportPdf",
-        "title": "HDL AutoDoc: Export documentation as PDF"
+        "title": "HDL-AutoDoc-Lite: Export documentation as PDF"
       }
     ],
     "configuration": {
-      "title": "HDL AutoDoc",
+      "title": "HDL-AutoDoc-Lite",
       "properties": {
         "hdlAutodoc.pythonPath": {
           "type": "string",

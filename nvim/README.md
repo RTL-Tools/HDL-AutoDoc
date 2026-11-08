@@ -5,7 +5,7 @@
 > The command names and options below may still change. For VS Code see [`../vscode/README.md`](../vscode/README.md).
 
 A live documentation view of the VHDL or SystemVerilog buffer you are editing, in a split beside it,
-inside the terminal. It shows what the [HDL AutoDoc](https://github.com/RTL-Tools/HDLAutoDoc) site will
+inside the terminal. It shows what the [HDL AutoDoc](https://github.com/RTL-Tools/HDL-AutoDoc) site will
 show for that module, as you type:
 
 - the header description, generics or parameters, and ports (with bus groups and interface ports),
@@ -46,7 +46,7 @@ repository, so its path is added explicitly:
 
 ```lua
 {
-  "RTL-Tools/HDLAutoDoc",
+  "RTL-Tools/HDL-AutoDoc",
   ft = { "vhdl", "systemverilog", "verilog" },
   config = function(plugin)
     vim.opt.rtp:append(plugin.dir .. "/nvim")

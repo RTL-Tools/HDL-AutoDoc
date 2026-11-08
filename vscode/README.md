@@ -1,7 +1,7 @@
-# HDL AutoDoc for VS Code
+# HDL-AutoDoc-Lite for VS Code
 
 A live documentation preview for the VHDL or SystemVerilog file you are editing. It shows what the
-[HDL AutoDoc](https://github.com/RTL-Tools/HDLAutoDoc) site will show for that module, as you type:
+[HDL AutoDoc](https://github.com/RTL-Tools/HDL-AutoDoc) site will show for that module, as you type:
 
 - the header description, generics or parameters, and ports (with bus groups and interface ports),
 - instances, the state machine (diagram and transition table),
@@ -15,10 +15,10 @@ clicking a port, generic, instance or process jumps to its line.
 ## Use
 
 1. Open a `.vhd`, `.vhdl`, `.sv`, `.svh`, `.v` or `.vh` file.
-2. Click the preview icon at the top right of the editor, or run **HDL AutoDoc: Show documentation** from the Command Palette. The panel opens beside the editor.
-3. **Export HTML** (top right of the panel, or **HDL AutoDoc: Export documentation as HTML**) saves a standalone page with the diagrams drawn for a white background, whatever theme the panel is in.
-4. **Export Markdown** (or **HDL AutoDoc: Export documentation as Markdown**) saves the same documentation as a `.md` file. Diagrams are inserted as their source in fenced `mermaid`, `wavedrom` and `dot` code blocks: GitHub and many editors draw the Mermaid ones, and the others stay readable as code.
-5. **Export PDF** (or **HDL AutoDoc: Export documentation as PDF**) prints the same page as the HTML export to an A4 PDF, with tables and diagrams kept whole across page breaks. It needs Chrome, Edge, Brave or Chromium, found in the usual places or named in `hdlAutodoc.browserPath`; without one it offers to save the HTML for you to print from any browser.
+2. Click the preview icon at the top right of the editor, or run **HDL-AutoDoc-Lite: Show documentation** from the Command Palette. The panel opens beside the editor.
+3. **Export HTML** (top right of the panel, or **HDL-AutoDoc-Lite: Export documentation as HTML**) saves a standalone page with the diagrams drawn for a white background, whatever theme the panel is in.
+4. **Export Markdown** (or **HDL-AutoDoc-Lite: Export documentation as Markdown**) saves the same documentation as a `.md` file. Diagrams are inserted as their source in fenced `mermaid`, `wavedrom` and `dot` code blocks: GitHub and many editors draw the Mermaid ones, and the others stay readable as code.
+5. **Export PDF** (or **HDL-AutoDoc-Lite: Export documentation as PDF**) prints the same page as the HTML export to an A4 PDF, with tables and diagrams kept whole across page breaks. It needs Chrome, Edge, Brave or Chromium, found in the usual places or named in `hdlAutodoc.browserPath`; without one it offers to save the HTML for you to print from any browser.
 
 The panel refreshes after you stop typing, on save, and when you switch files. Opening a file that is
 not HDL leaves the last document in place and says so.
