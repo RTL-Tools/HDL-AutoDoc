@@ -75,4 +75,4 @@ user-data and extensions folders and never touch your settings.
   those belong to the full site (`make doc-html`).
 - Descriptions are shown as plain text with ``code`` spans; other reStructuredText is not rendered.
 - A port declaration must be on its own line to be read (`input a, input b,` on one line yields only `a`).
-- No publishing to the Marketplace yet; the extension is installed from the `.vsix` file.
+- Published to the Marketplace by `.github/workflows/publish.yaml` when a `v*` tag is pushed; the `.vsix` can also be installed from the GitHub release.

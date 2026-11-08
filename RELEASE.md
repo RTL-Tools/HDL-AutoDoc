@@ -1,5 +1,19 @@
 # Release Notes
 
+## v3.18.1
+
+#### Changes
+
+- **VS Code extension renamed to HDL-AutoDoc-Lite** — the name, Command Palette entries and settings title change; the extension ID (`hdl-autodoc`) and the `hdlAutodoc.*` settings are unchanged.
+- **Published to the Marketplace** — pushing a `v*` tag runs `.github/workflows/publish.yaml`, which tests, builds and publishes the extension (trusted publishing) and attaches the `.vsix` to the GitHub release. The publisher is `HDL-Tools`.
+- **Repository renamed to HDL-AutoDoc** — the Pages demo is now at `rtl-tools.github.io/HDL-AutoDoc/`.
+
+#### Compatibility
+
+- Backwards compatible: no change to the tool, the extractors or the generated documentation.
+
+---
+
 ## v3.18.0
 
 #### New features
