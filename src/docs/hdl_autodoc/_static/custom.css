@@ -632,3 +632,6 @@ details.hdl-rtl-detail > summary {
 details.hdl-rtl-detail[open] > summary {
   margin-bottom: 0.5rem;
 }
+
+/* the logo is a square icon: keep it small in the sidebar */
+.sidebar-logo { max-width: 5rem; }

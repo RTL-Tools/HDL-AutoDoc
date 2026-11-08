@@ -1,5 +1,17 @@
 # Release Notes
 
+## v3.18.3
+
+#### Changes
+
+- **Site logo and favicon** — the generated site now uses the chip-and-open-book icon instead of the blue chip banner, at a smaller size in the sidebar. Replace `_static/logo.svg` to use your own.
+
+#### Compatibility
+
+- Backwards compatible: no change to the extractors or the generated documentation; the extension is republished unchanged at the new version.
+
+---
+
 ## v3.18.2
 
 #### Changes

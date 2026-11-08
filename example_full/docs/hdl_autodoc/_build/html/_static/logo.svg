@@ -1,15 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
-  <!-- chip body -->
-  <rect x="30" y="8" width="60" height="24" rx="4" fill="#2980b9"/>
-  <!-- left pins -->
-  <rect x="18" y="13" width="12" height="3" fill="#1a5276"/>
-  <rect x="18" y="19" width="12" height="3" fill="#1a5276"/>
-  <rect x="18" y="25" width="12" height="3" fill="#1a5276"/>
-  <!-- right pins -->
-  <rect x="90" y="13" width="12" height="3" fill="#1a5276"/>
-  <rect x="90" y="19" width="12" height="3" fill="#1a5276"/>
-  <rect x="90" y="25" width="12" height="3" fill="#1a5276"/>
-  <!-- chip label -->
-  <text x="60" y="23" font-family="monospace" font-size="9" fill="white"
-        text-anchor="middle">HDL</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<rect width="128" height="128" rx="24" fill="#12233b"/>
+<g stroke="#5eead4" stroke-width="5" stroke-linecap="round">
+<path d="M42 18v12M64 18v12M86 18v12M42 98v12M64 98v12M86 98v12M18 42h12M18 64h12M18 86h12M98 42h12M98 64h12M98 86h12"/></g>
+<rect x="30" y="30" width="68" height="68" rx="9" fill="#1c3557" stroke="#5eead4" stroke-width="4"/>
+<g fill="#e2e8f0">
+<path d="M62 48C56 43 47 42 39 45V80C47 77 56 78 62 83Z"/>
+<path d="M66 48C72 43 81 42 89 45V80C81 77 72 78 66 83Z"/></g>
+<g stroke="#94a3b8" stroke-width="3" stroke-linecap="round">
+<path d="M44 53h12M44 60h12M44 67h9M72 53h12M72 60h12M72 67h9"/></g>
 </svg>
