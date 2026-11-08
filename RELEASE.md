@@ -1,5 +1,17 @@
 # Release Notes
 
+## v3.18.2
+
+#### Changes
+
+- **VS Code extension icon** — HDL-AutoDoc-Lite now has a Marketplace icon: a chip with an open book, in the same style as the other HDL-Tools extensions.
+
+#### Compatibility
+
+- Backwards compatible: no change to the tool, the extractors or the generated documentation.
+
+---
+
 ## v3.18.1
 
 #### Changes

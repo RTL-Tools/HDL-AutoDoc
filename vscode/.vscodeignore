@@ -1,6 +1,7 @@
 **
 !package.json
 !README.md
+!media/icon.png
 !dist/extension.js
 !dist/webview.js
 !dist/panel.css
