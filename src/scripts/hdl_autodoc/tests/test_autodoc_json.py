@@ -1,6 +1,7 @@
 """autodoc_json: one JSON document per source file, for the VS Code extension."""
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -140,6 +141,19 @@ def test_cdc_and_reset_sections_for_a_two_clock_file():
     assert {p["label"]: (p["reset"], p["style"]) for p in reset["processes"]}["p_adc_en"] == ("adc_rst", "sync")
     assert set(reset["domains"]) == {"rst_n", "adc_rst"}
     assert reset["domains"]["adc_rst"] == ["p_adc_en", "p_adc_capture"]
+
+
+def test_cdc_and_reset_names_carry_the_line_they_are_first_mentioned_on():
+    source = (ROOT / "example_full/src/sample_capture.sv").read_text()
+    lines = source.split("\n")
+    doc = build_document(source, "systemverilog")
+    for section, names in (("cdc", {"clk", "adc_clk", "capture_en", "clear_req"}),
+                           ("reset", {"rst_n", "adc_rst", "clk", "capture_en"})):
+        for name in names:
+            line = doc[section]["lines"][name]
+            assert re.search(rf"\b{name}\b", lines[line - 1]), (section, name, lines[line - 1])
+            assert not any(re.search(rf"\b{name}\b", earlier) for earlier in lines[:line - 1]
+                           if not earlier.strip().startswith("//"))
 
 
 def test_a_file_with_no_clocked_logic_has_no_cdc_or_reset():

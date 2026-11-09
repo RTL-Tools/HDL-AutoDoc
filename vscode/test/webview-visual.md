@@ -13,3 +13,9 @@ To refresh a fixture after changing `autodoc_json.py`:
 
     python3 ../src/scripts/hdl_autodoc/autodoc_json.py --language vhdl \
         < ../example_full/src/sample_ctrl.vhd | python3 -m json.tool > test/fixtures/sample_ctrl.json
+
+`sample_capture.json` is made with the demo's bus groups (without them the converter group is gone):
+
+    python3 ../src/scripts/hdl_autodoc/autodoc_json.py --language systemverilog \
+        --bus-groups ../example_full/docs/hdl_autodoc/bus_groups.toml \
+        < ../example_full/src/sample_capture.sv | python3 -m json.tool > test/fixtures/sample_capture.json

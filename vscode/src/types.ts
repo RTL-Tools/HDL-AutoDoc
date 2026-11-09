@@ -65,12 +65,14 @@ export interface CdcAnalysis {
   domains: Record<string, string[]>;
   crossings: { signal: string; src_clock: string; dst_clock: string; synchronized: boolean }[];
   dual_clock_instances: { instance: string; component: string; clocks: Record<string, string> }[];
+  lines?: Record<string, number>;                // where each clock and crossing signal is first mentioned
 }
 
 export interface ResetAnalysis {
   processes: { label: string; clock: string; reset: string | null; style: string }[];
   domains: Record<string, string[]>;
   crossings: { signal: string; src_reset: string; dst_reset: string }[];
+  lines?: Record<string, number>;
 }
 
 export interface Document {

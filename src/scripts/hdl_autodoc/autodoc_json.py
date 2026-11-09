@@ -23,8 +23,8 @@ Document shape:
     instances  [{instance, component, kind, line}]                   kind "module" | "interface"
     processes  [{label, kind, line, sensitivity, description, wavedrom: [str], mermaid: [...]}]
     fsm        {states, line, state_lines: {state: line}, transitions: [{from, to, condition, line}], dot} | null
-    cdc        {domains: {clock: [process]}, crossings, dual_clock_instances} | null
-    reset      {processes, domains: {reset: [process]}, crossings} | null
+    cdc        {domains: {clock: [process]}, crossings, dual_clock_instances, lines: {name: line}} | null
+    reset      {processes, domains: {reset: [process]}, crossings, lines: {name: line}} | null
     warnings   [str]
 """
 
@@ -158,19 +158,36 @@ def _fsm(text: str, vhdl: bool, name: str) -> dict | None:
             "dot": extract_fsm.write_dot(transitions, states, safe_id(name))}
 
 
-def _cdc(text: str, vhdl: bool) -> dict | None:
+def _first_lines(blanked: str, names) -> dict[str, int]:
+    """{name: line of its first mention outside comments}: normally the port or declaration,
+    since a declaration comes before use.  Names that do not appear are left out."""
+    found = {}
+    for name in names:
+        m = re.search(rf"(?<!\w){re.escape(name)}(?!\w)", blanked)
+        if m:
+            found[name] = blanked.count("\n", 0, m.start()) + 1
+    return found
+
+
+def _cdc(text: str, blanked: str, vhdl: bool) -> dict | None:
     analysis = extract_cdc.analyse_cdc(text, vhdl)
-    return analysis if analysis["domains"] else None
+    if not analysis["domains"]:
+        return None
+    names = set(analysis["domains"]) | {x["signal"] for x in analysis["crossings"]}
+    return {**analysis, "lines": _first_lines(blanked, names)}
 
 
-def _reset(text: str, vhdl: bool) -> dict | None:
+def _reset(text: str, blanked: str, vhdl: bool) -> dict | None:
     analysis = extract_reset.analyse_reset(text, vhdl)
     if not analysis["processes"]:
         return None
+    names = ({p["clock"] for p in analysis["processes"]} | {p["reset"] for p in analysis["processes"]}
+             | {x["signal"] for x in analysis["crossings"]})
     return {"processes": [{"label": p["label"], "clock": p["clock"], "reset": p["reset"],
                            "style": p["style"]} for p in analysis["processes"]],
             "domains": {key: [p["label"] for p in procs] for key, procs in analysis["domains"].items()},
-            "crossings": analysis["crossings"]}
+            "crossings": analysis["crossings"],
+            "lines": _first_lines(blanked, {n for n in names if n})}
 
 
 def build_document(text: str, language: str, support_files=(), bus_groups: Path | None = None) -> dict:
@@ -202,8 +219,8 @@ def build_document(text: str, language: str, support_files=(), bus_groups: Path 
         "instances": section("instances", lambda: _instances(text, blanked, vhdl, interface_names), []),
         "processes": section("processes", lambda: _processes(lines, vhdl), []),
         "fsm": section("fsm", lambda: _fsm(text, vhdl, module["name"] if module else "fsm"), None),
-        "cdc": section("cdc", lambda: _cdc(text, vhdl), None),
-        "reset": section("reset", lambda: _reset(text, vhdl), None),
+        "cdc": section("cdc", lambda: _cdc(text, blanked, vhdl), None),
+        "reset": section("reset", lambda: _reset(text, blanked, vhdl), None),
         "warnings": warnings,
     }
 

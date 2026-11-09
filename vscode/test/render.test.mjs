@@ -123,6 +123,32 @@ test('clock domains list processes, crossings say whether they are synchronised,
   assert.match(html, /u_fifo[\s\S]*?async_fifo/);
 });
 
+test('clock-domain tables link processes, clocks and crossing signals to their source lines', () => {
+  const html = renderDocument(empty({
+    processes: [{ label: 'p_a', kind: 'process', line: 30, sensitivity: [], description: '', wavedrom: [], mermaid: [] }],
+    instances: [{ instance: 'u_fifo', component: 'async_fifo', kind: 'module', line: 50 }],
+    cdc: {
+      domains: { clk: ['p_a', 'p_x'] }, lines: { clk: 4, req: 9 },
+      crossings: [{ signal: 'req', src_clock: 'clk', dst_clock: 'clk', synchronized: true }],
+      dual_clock_instances: [{ instance: 'u_fifo', component: 'async_fifo', clocks: {} }] } }));
+  assert.match(html, /<span class="jump" data-line="30">p_a<\/span>, p_x/);       // p_x has no process: plain text
+  assert.match(html, /<span class="jump" data-line="4">clk<\/span>/);
+  assert.match(html, /<tr data-line="9">\s*<td><code>req<\/code>/);
+  assert.match(html, /<tr data-line="50">\s*<td><code>u_fifo<\/code>/);
+});
+
+test('reset tables link processes, clocks, resets and crossing signals to their source lines', () => {
+  const html = renderDocument(empty({
+    processes: [{ label: 'p_a', kind: 'process', line: 30, sensitivity: [], description: '', wavedrom: [], mermaid: [] }],
+    reset: {
+      processes: [{ label: 'p_a', clock: 'clk', reset: 'rst', style: 'sync' }], domains: { rst: ['p_a'] },
+      lines: { clk: 4, rst: 5, req: 9 }, crossings: [{ signal: 'req', src_reset: 'rst', dst_reset: 'rst' }] } }));
+  assert.match(html, /<tr data-line="30">\s*<td><code>p_a<\/code>/);
+  assert.match(html, /<span class="jump" data-line="4">clk<\/span>/);
+  assert.match(html, /<span class="jump" data-line="5">rst<\/span>/);
+  assert.match(html, /<tr data-line="9">\s*<td><code>req<\/code>/);
+});
+
 test('reset domains name the style of each process; no reset is shown as "none"', () => {
   const html = renderDocument(empty({ reset: {
     processes: [{ label: 'p_a', clock: 'clk', reset: 'rst', style: 'sync' }, { label: 'p_b', clock: 'clk', reset: null, style: 'none' }],

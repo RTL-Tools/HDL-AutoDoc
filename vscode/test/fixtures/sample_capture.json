@@ -246,7 +246,13 @@
                     "rd_clk": "clk"
                 }
             }
-        ]
+        ],
+        "lines": {
+            "adc_clk": 38,
+            "clk": 29,
+            "clear_req": 55,
+            "capture_en": 55
+        }
     },
     "reset": {
         "processes": [
@@ -296,7 +302,15 @@
                 "src_reset": "rst_n",
                 "dst_reset": "adc_rst"
             }
-        ]
+        ],
+        "lines": {
+            "adc_clk": 38,
+            "capture_en": 55,
+            "clk": 29,
+            "clear_req": 55,
+            "adc_rst": 40,
+            "rst_n": 32
+        }
     },
     "warnings": []
 }

@@ -100,6 +100,22 @@ test('clicking a state in the diagram asks the host to show its line; the backgr
   await page.close();
 });
 
+test('clicking a linked name in the clock-domain table asks the host to show that line', async (t) => {
+  if (!browser) return t.skip('no Chrome');
+  const doc = fixture('sample_capture');
+  await open();
+  await render(renderDocument(doc));
+  await page.waitForSelector('.jump[data-line]');
+  const line = await page.evaluate(() => {
+    const link = document.querySelector('.jump[data-line]');
+    link.click();
+    return Number(link.getAttribute('data-line'));
+  });
+  const posted = await page.evaluate(() => window.__posted);
+  assert.ok(posted.some((m) => m.type === 'goto' && m.line === line), JSON.stringify(posted));
+  await page.close();
+});
+
 test('clicking a row asks the host to show that line', async (t) => {
   if (!browser) return t.skip('no Chrome');
   const doc = fixture('sample_capture');

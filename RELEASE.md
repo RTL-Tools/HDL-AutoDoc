@@ -1,5 +1,17 @@
 # Release Notes
 
+## v3.21.0
+
+#### New features
+
+- **VS Code extension: the clock- and reset-domain tables are clickable** — process names jump to the process, clock and reset names and crossing signals to where they are first mentioned in the file (normally the port or declaration), and a dual-clock instance row to the instance. `autodoc_json.py` adds a `lines` map (`name → line`) to its `cdc` and `reset` sections; the site build does not use it.
+
+#### Compatibility
+
+- Backwards compatible: the generated site is unchanged. Consumers of `autodoc_json.py` get an extra `lines` field in `cdc` and `reset`.
+
+---
+
 ## v3.20.0
 
 #### New features

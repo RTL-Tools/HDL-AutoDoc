@@ -90,28 +90,38 @@ function processes(list: ProcessInfo[]): string {
   ].filter((s) => s !== '').join('\n')).join('\n');
 }
 
-function cdc(c: CdcAnalysis): string {
-  const domains = table(['Clock', 'Processes'], Object.entries(c.domains).map(([clk, procs]) =>
-    `<tr><td><code>${esc(clk)}</code></td><td>${esc(procs.join(', '))}</td></tr>`));
+/** A name that jumps to `line` when clicked; plain text when the line is unknown. */
+const jump = (name: string, line: number | undefined): string =>
+  line === undefined ? esc(name) : `<span class="jump" data-line="${line}">${esc(name)}</span>`;
+const rowAt = (line: number | undefined): string => (line === undefined ? '<tr>' : `<tr data-line="${line}">`);
+
+function cdc(c: CdcAnalysis, procs: Record<string, number>, instances: Record<string, number>): string {
+  const at = c.lines ?? {};
+  const domains = table(['Clock', 'Processes'], Object.entries(c.domains).map(([clk, names]) =>
+    `<tr><td><code>${jump(clk, at[clk])}</code></td><td>${names.map((n) => jump(n, procs[n])).join(', ')}</td></tr>`));
   const crossings = table(['Signal', 'From', 'To', 'Synchroniser'], c.crossings.map((x) =>
-    `<tr><td><code>${esc(x.signal)}</code></td><td>${esc(x.src_clock)}</td><td>${esc(x.dst_clock)}</td>` +
+    `${rowAt(at[x.signal])}<td><code>${esc(x.signal)}</code></td><td>${jump(x.src_clock, at[x.src_clock])}</td><td>${jump(x.dst_clock, at[x.dst_clock])}</td>` +
     `<td class="${x.synchronized ? 'ok' : 'bad'}">${x.synchronized ? 'two-flop' : 'not synchronised'}</td></tr>`));
   const dual = table(['Instance', 'Of', 'Clock connections'], c.dual_clock_instances.map((d) =>
-    `<tr><td><code>${esc(d.instance)}</code></td><td><code>${esc(d.component)}</code></td>` +
+    `${rowAt(instances[d.instance])}<td><code>${esc(d.instance)}</code></td><td><code>${esc(d.component)}</code></td>` +
     `<td>${esc(Object.entries(d.clocks).map(([port, sig]) => `${port} → ${sig}`).join(', '))}</td></tr>`));
   return [domains, crossings === '' ? '' : `<h3>Crossings</h3>\n${crossings}`,
           dual === '' ? '' : `<h3>Dual-clock instances</h3>\n${dual}`].filter((s) => s !== '').join('\n');
 }
 
-function reset(r: ResetAnalysis): string {
-  const procs = table(['Process', 'Clock', 'Reset', 'Style'], r.processes.map((p) =>
-    `<tr><td><code>${esc(p.label)}</code></td><td>${esc(p.clock)}</td><td>${esc(label(p.reset))}</td><td>${esc(p.style === 'none' ? '—' : p.style)}</td></tr>`));
+function reset(r: ResetAnalysis, procs: Record<string, number>): string {
+  const at = r.lines ?? {};
+  const procRows = table(['Process', 'Clock', 'Reset', 'Style'], r.processes.map((p) =>
+    `${rowAt(procs[p.label])}<td><code>${esc(p.label)}</code></td><td>${jump(p.clock, at[p.clock])}</td>` +
+    `<td>${jump(label(p.reset), p.reset === null ? undefined : at[p.reset])}</td><td>${esc(p.style === 'none' ? '—' : p.style)}</td></tr>`));
   const crossings = table(['Signal', 'From reset', 'To reset'], r.crossings.map((x) =>
-    `<tr><td><code>${esc(x.signal)}</code></td><td>${esc(label(x.src_reset))}</td><td>${esc(label(x.dst_reset))}</td></tr>`));
-  return [procs, crossings === '' ? '' : `<h3>Crossings</h3>\n${crossings}`].filter((s) => s !== '').join('\n');
+    `${rowAt(at[x.signal])}<td><code>${esc(x.signal)}</code></td><td>${jump(label(x.src_reset), at[x.src_reset])}</td><td>${jump(label(x.dst_reset), at[x.dst_reset])}</td></tr>`));
+  return [procRows, crossings === '' ? '' : `<h3>Crossings</h3>\n${crossings}`].filter((s) => s !== '').join('\n');
 }
 
 export function renderDocument(doc: Document): string {
+  const procLines = Object.fromEntries(doc.processes.map((p) => [p.label, p.line]));
+  const instanceLines = Object.fromEntries(doc.instances.map((i) => [i.instance, i.line]));
   const header = doc.module === null ? '' : [
     `<header class="module">`,
     `<h1 data-line="${doc.module.line}">${esc(doc.module.name)}<small class="lang">${esc(doc.language)}</small></h1>`,
@@ -127,8 +137,8 @@ export function renderDocument(doc: Document): string {
     section('Instances', instances(doc.instances)),
     section('State machine', doc.fsm === null ? '' : fsm(doc.fsm)),
     section('Processes', processes(doc.processes)),
-    section('Clock domains', doc.cdc === null ? '' : cdc(doc.cdc)),
-    section('Reset domains', doc.reset === null ? '' : reset(doc.reset)),
+    section('Clock domains', doc.cdc === null ? '' : cdc(doc.cdc, procLines, instanceLines)),
+    section('Reset domains', doc.reset === null ? '' : reset(doc.reset, procLines)),
     section('Warnings', doc.warnings.length === 0 ? '' : `<ul class="warnings">${doc.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>`),
   ].filter((s) => s !== '').join('\n');
 }
