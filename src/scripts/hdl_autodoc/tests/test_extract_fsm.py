@@ -14,6 +14,8 @@ Covers:
 
 from extract_fsm import (
     collect_states,
+    extract_outputs_sv,
+    extract_outputs_vhdl,
     extract_transitions_sv,
     extract_transitions_vhdl,
     write_dot,
@@ -117,6 +119,130 @@ def test_sv_no_fsm_returns_empty():
     """SV source with no FSM case block returns an empty list."""
     text = "module foo (input logic clk); assign out = in; endmodule\n"
     assert extract_transitions_sv(text) == []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FSMs that do not use `next_state`: any selector and target name, any process order
+# ─────────────────────────────────────────────────────────────────────────────
+
+_VHDL_LOGIC = """\
+  p_logic : process(clk) is
+  begin
+    if rising_edge(clk) then
+      valid <= '0';
+      case curr_st is
+        when S_IDLE => null;
+        when S_RUN  => valid <= '1';
+        when S_DONE => null;
+      end case;
+    end if;
+  end process p_logic;
+"""
+
+_VHDL_FSM_ONE_PROCESS = """\
+  p_fsm : process(clk) is
+  begin
+    if rising_edge(clk) then
+      case curr_st is
+        when S_IDLE => if go = '1' then curr_st <= S_RUN; end if;
+        when S_RUN  => if ready = '1' then curr_st <= S_DONE; end if;
+        when S_DONE => curr_st <= S_IDLE;
+      end case;
+    end if;
+  end process p_fsm;
+"""
+
+_EXPECTED = {("S_IDLE", "S_RUN"), ("S_RUN", "S_DONE"), ("S_DONE", "S_IDLE")}
+
+
+def _vhdl(*processes):
+    return "architecture rtl of x is\nbegin\n" + "".join(processes) + "end architecture;\n"
+
+
+def test_vhdl_state_assigned_directly_in_one_process():
+    pairs = {(f, t) for f, t, _ in extract_transitions_vhdl(_vhdl(_VHDL_FSM_ONE_PROCESS))}
+    assert pairs == _EXPECTED
+
+
+def test_vhdl_process_order_does_not_matter():
+    for order in ((_VHDL_LOGIC, _VHDL_FSM_ONE_PROCESS), (_VHDL_FSM_ONE_PROCESS, _VHDL_LOGIC)):
+        pairs = {(f, t) for f, t, _ in extract_transitions_vhdl(_vhdl(*order))}
+        assert pairs == _EXPECTED
+
+
+def test_vhdl_target_signal_may_have_any_name():
+    text = _vhdl(_VHDL_FSM_ONE_PROCESS.replace("curr_st <=", "nxt_st <="))
+    assert {(f, t) for f, t, _ in extract_transitions_vhdl(text)} == _EXPECTED
+
+
+def test_vhdl_outputs_come_from_the_logic_process_not_the_fsm_process():
+    outputs = extract_outputs_vhdl(_vhdl(_VHDL_FSM_ONE_PROCESS, _VHDL_LOGIC))
+    assert outputs["S_RUN"]["valid"] == "1" and outputs["S_IDLE"]["valid"] == "0"
+
+
+_SV_LOGIC = """\
+  always_comb begin
+    valid = 1'b0;
+    case (curr_st)
+      S_RUN: valid = 1'b1;
+      default: ;
+    endcase
+  end
+"""
+
+_SV_FSM_ONE_PROCESS = """\
+  always_ff @(posedge clk) begin
+    case (curr_st)
+      S_IDLE: if (go) curr_st <= S_RUN;
+      S_RUN:  if (ready) curr_st <= S_DONE;
+      S_DONE: curr_st <= S_IDLE;
+      default: curr_st <= S_IDLE;
+    endcase
+  end
+"""
+
+
+def test_sv_state_assigned_directly_in_any_process_order():
+    for order in ((_SV_LOGIC, _SV_FSM_ONE_PROCESS), (_SV_FSM_ONE_PROCESS, _SV_LOGIC)):
+        pairs = {(f, t) for f, t, _ in extract_transitions_sv("module m;\n" + "".join(order) + "endmodule\n")}
+        assert _EXPECTED <= pairs
+
+
+def test_sv_outputs_come_from_the_logic_process():
+    outputs = extract_outputs_sv("module m;\n" + _SV_FSM_ONE_PROCESS + _SV_LOGIC + "endmodule\n")
+    assert outputs["S_RUN"]["valid"] == "1"
+
+
+def test_vhdl_state_assignments_inside_nested_if_else_are_all_found():
+    text = _vhdl("""\
+  p_fsm : process(clk) is
+  begin
+    case curr_st is
+      when S_IDLE =>
+        if go = '1' then
+          if wr = '1' then curr_st <= S_RUN; else curr_st <= S_DONE; end if;
+        end if;
+      when S_RUN =>
+        if ready = '1' then
+          data <= x;
+          curr_st <= S_DONE;
+        elsif abort = '1' then curr_st <= S_IDLE;
+        end if;
+      when S_DONE => curr_st <= S_IDLE;
+    end case;
+  end process p_fsm;
+""")
+    got = set(extract_transitions_vhdl(text))
+    assert ("S_IDLE", "S_RUN", "go = '1' and wr = '1'") in got
+    assert ("S_IDLE", "S_DONE", "go = '1' and not (wr = '1')") in got
+    assert ("S_RUN", "S_DONE", "ready = '1'") in got
+    assert ("S_RUN", "S_IDLE", "abort = '1'") in got
+    assert ("S_DONE", "S_IDLE", "") in got
+
+
+def test_a_case_that_assigns_no_state_is_not_an_fsm():
+    text = _vhdl(_VHDL_LOGIC)
+    assert extract_transitions_vhdl(text) == []
 
 
 # ─────────────────────────────────────────────────────────────────────────────

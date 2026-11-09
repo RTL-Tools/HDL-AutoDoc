@@ -1,5 +1,23 @@
 # Release Notes
 
+## v3.19.0
+
+#### New features
+
+- **State machines are found by their structure** — the FSM extractor no longer needs a signal called `next_state`. It looks for a `case` whose arms assign a signal to the names of those arms, so any selector and state-signal name works (`state`, `phase`, `tx_fsm`, a separate `nxt_st`…), in VHDL and SystemVerilog, and the state can be assigned directly in the same process (`state <= S_RUN`). Designs that use `next_state` give the same diagrams as before.
+- **Process order no longer matters** — an output-decode process above the FSM process used to hide the diagram, because the first `case` in the file was read. Other processes still supply the per-state outputs.
+- **Nested conditions (VHDL)** — `if`, `elsif` and `else` inside a state's arm are followed, so a transition shows its full condition (`a = '1' and not (b = '1')`) and assignments that come after other statements are found.
+
+#### Fixes
+
+- The `apb_bridge` demo's `phase` state machine, previously not detected, now produces its seven transitions.
+
+#### Compatibility
+
+- Backwards compatible: existing FSMs give the same transitions. Designs that were not detected before may now get a state-machine page. Still not covered: a state assigned from several processes, and Mealy outputs on the transitions.
+
+---
+
 ## v3.18.4
 
 #### Changes

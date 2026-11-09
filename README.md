@@ -706,7 +706,7 @@ Done. The new module appears in the overview (tree and table), navigation, and g
 
 ### FSM extraction
 
-- Requires a labeled `case` block that assigns `next_state`. Complex FSMs split across multiple processes may not be fully captured.
+- Reads one `case` block whose arms assign a signal to the names of those arms, so the state signal can have any name (`state`, `next_state`, `phase`, …) and be assigned directly or through a next-state signal. An FSM whose state is assigned from several processes is only partly captured.
 - Only the first matching `case` block per module is extracted — multi-process FSMs are partially captured at best.
 
 ### CDC analysis
