@@ -156,6 +156,18 @@ def test_cdc_and_reset_names_carry_the_line_they_are_first_mentioned_on():
                            if not earlier.strip().startswith("//"))
 
 
+def test_block_diagram_is_the_sites_graphviz_source_for_the_module():
+    block = build_document(VHDL, "vhdl")["block"]
+    assert block["dot"].startswith("digraph counter_block")
+    assert "clk" in block["dot"] and "W = 8" in block["dot"]           # a port and a generic
+    sv = build_document((ROOT / "example_full/src/sample_capture.sv").read_text(), "systemverilog")["block"]
+    assert sv["dot"].startswith("digraph sample_capture_block")
+
+
+def test_a_file_with_no_module_has_no_block_diagram():
+    assert build_document("garbage ((( ;;; end", "vhdl")["block"] is None
+
+
 def test_a_file_with_no_clocked_logic_has_no_cdc_or_reset():
     doc = build_document("module m (input logic a, output logic b);\n  assign b = a;\nendmodule\n", "systemverilog")
     assert doc["cdc"] is None and doc["reset"] is None

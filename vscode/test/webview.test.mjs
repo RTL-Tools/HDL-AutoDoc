@@ -86,6 +86,35 @@ for (const theme of ['light', 'dark']) {
   }
 }
 
+test('the block diagram is drawn from its Graphviz source', async (t) => {
+  if (!browser) return t.skip('no Chrome');
+  const doc = fixture('sample_capture');
+  doc.block = { dot: 'digraph m_block { a -> b; }' };
+  await open();
+  await render(renderDocument(doc));
+  await page.waitForSelector('.block svg', { timeout: 20000 });
+  assert.equal(await count('.block svg'), 1);
+  await page.close();
+});
+
+test('clicking a port or generic in the block diagram asks the host to show its line', async (t) => {
+  if (!browser) return t.skip('no Chrome');
+  const doc = fixture('sample_capture');
+  await open();
+  await render(renderDocument(doc));
+  await page.waitForSelector('.block text[data-line]', { timeout: 20000 });
+  const names = ['clk', 'sample_data', 'STICKY_OVERFLOW'];
+  for (const name of names) {
+    await page.evaluate((n) => [...document.querySelectorAll('.block text')]
+      .find((x) => x.textContent.replace(/[▸◂]/g, '').trim().split(/\s+/)[0] === n)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true })), name);
+  }
+  const lineOf = (n) => (doc.ports.find((p) => p.name === n) ?? doc.generics.find((g) => g.name === n)).line;
+  const posted = (await page.evaluate(() => window.__posted)).filter((m) => m.type === 'goto').map((m) => m.line);
+  assert.deepEqual(posted, names.map(lineOf));
+  await page.close();
+});
+
 test('clicking a state in the diagram asks the host to show its line; the background shows the case', async (t) => {
   if (!browser) return t.skip('no Chrome');
   const doc = fixture('sample_ctrl');

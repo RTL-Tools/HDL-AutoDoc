@@ -132,6 +132,7 @@ export function renderDocument(doc: Document): string {
 
   return [
     header,
+    section('Block diagram', doc.block ? `<div class="block" data-lines="${esc(JSON.stringify(Object.fromEntries([...doc.generics, ...doc.ports].map((x) => [x.name, x.line]))))}" data-dot="${esc(doc.block.dot)}"></div>` : ''),
     section(doc.language === 'vhdl' ? 'Generics' : 'Parameters', generics(doc.generics)),
     section('Ports', ports(doc.ports)),
     section('Instances', instances(doc.instances)),

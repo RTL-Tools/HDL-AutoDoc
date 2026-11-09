@@ -89,6 +89,7 @@ function reset(r: ResetAnalysis): string[] {
 export function renderMarkdown(doc: Document): string {
   const blocks = [
     ...(doc.module === null ? [] : [`# ${doc.module.name}`, doc.module.description.trim(), ...diagrams(doc.module.wavedrom, doc.module.mermaid)]),
+    ...section('Block diagram', doc.block ? [fenced('dot', doc.block.dot)] : []),
     ...section(doc.language === 'vhdl' ? 'Generics' : 'Parameters', generics(doc.generics)),
     ...section('Ports', ports(doc.ports)),
     ...section('Instances', instances(doc.instances)),

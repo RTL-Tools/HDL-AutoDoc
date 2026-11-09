@@ -155,6 +155,9 @@
             "group": null
         }
     ],
+    "block": {
+        "dot": "digraph sample_capture_block {\n    rankdir=LR;\n    nodesep=0.5;\n    ranksep=0.8;\n    node [fontname=\"Helvetica\", fontsize=12, shape=none, margin=0];\n    edge [dir=none, penwidth=2.5, color=\"black\"];\n\n    // Generics box\n    gen_box_sample_capture [label=<\n        <TABLE BORDER=\"2\" CELLBORDER=\"0\" CELLSPACING=\"3\" CELLPADDING=\"0\" BGCOLOR=\"#c8f5c4\" COLOR=\"#1a5c1a\">\n          <TR><TD PORT=\"g_STICKY_OVERFLOW\" ALIGN=\"LEFT\" CELLPADDING=\"5\">STICKY_OVERFLOW = 1&#x27;b1</TD></TR>\n        </TABLE>>];\n\n    // Ports box\n    port_box_sample_capture [label=<\n        <TABLE BORDER=\"2\" CELLBORDER=\"0\" CELLSPACING=\"3\" CELLPADDING=\"0\" BGCOLOR=\"#fffde7\" COLOR=\"#5d4200\">\n          <TR><TD PORT=\"i_clk\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; clk</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_sample_data\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">sample_data &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_rst_n\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; rst_n</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_sample_valid\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">sample_valid &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_enable\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; enable</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_overflow\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">overflow &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_clear_overflow\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; clear_overflow</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n          <TR><TD PORT=\"i_adc_clk\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; adc_clk</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n          <TR><TD PORT=\"i_adc_rst\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; adc_rst</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n          <TR><TD PORT=\"i_adc_data\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; adc_data [full_pkg::SAMPLE_W-1:0]</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n          <TR><TD PORT=\"i_sample_ready\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; sample_ready</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n        </TABLE>>];\n\n    { rank=same; gen_box_sample_capture; port_box_sample_capture }\n    gen_box_sample_capture -> port_box_sample_capture [style=invis, weight=100];\n\n}"
+    },
     "instances": [
         {
             "instance": "u_fifo",
@@ -249,9 +252,9 @@
         ],
         "lines": {
             "adc_clk": 38,
-            "clk": 29,
+            "capture_en": 55,
             "clear_req": 55,
-            "capture_en": 55
+            "clk": 29
         }
     },
     "reset": {
@@ -305,10 +308,10 @@
         ],
         "lines": {
             "adc_clk": 38,
-            "capture_en": 55,
-            "clk": 29,
-            "clear_req": 55,
             "adc_rst": 40,
+            "capture_en": 55,
+            "clear_req": 55,
+            "clk": 29,
             "rst_n": 32
         }
     },

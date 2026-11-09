@@ -1,5 +1,22 @@
 # Release Notes
 
+## v3.22.0
+
+#### New features
+
+- **VS Code extension: block diagram** — a "Block diagram" section above the generics and ports: the same Graphviz diagram the site draws (generics box, ports box, bus widths, interface ports), drawn in the panel, in the exported HTML and as a `dot` block in the exported Markdown. A port or generic name in the diagram jumps to its declaration. `autodoc_json.py` returns the diagram's Graphviz source as `block.dot`; the site build does not use it.
+
+#### Fixes
+
+- **VS Code extension tests are no longer flaky** — the `vsix` test rebuilt `dist/` and `python/` while the browser tests, running in parallel, were reading them; the test files now run one at a time.
+- `autodoc_json.py` writes the `lines` maps of `cdc` and `reset` in sorted order, so the same file always gives the same JSON.
+
+#### Compatibility
+
+- Backwards compatible: the generated site is unchanged. Consumers of `autodoc_json.py` get an extra `block` field.
+
+---
+
 ## v3.21.0
 
 #### New features

@@ -17,7 +17,8 @@ code { background: var(--vscode-textCodeBlock-background); padding: 0 0.25em; bo
 table { border-collapse: collapse; width: 100%; margin: 0.6em 0 1em; }
 th, td { text-align: left; padding: 0.35em 0.7em; border: 1px solid var(--vscode-panel-border); vertical-align: top; }
 th { background: var(--vscode-editorWidget-background); }
-tr[data-line], h1[data-line], .process[data-line], .fsm[data-line], .fsm g.node[data-line], .jump { cursor: pointer; }
+tr[data-line], h1[data-line], .process[data-line], .fsm[data-line], .fsm g.node[data-line], .block text[data-line], .jump { cursor: pointer; }
+.block text[data-line]:hover { text-decoration: underline; }
 .jump { text-decoration: underline dotted; }
 .jump:hover { color: var(--vscode-textLink-foreground, var(--vscode-focusBorder)); }
 tr[data-line]:hover { background: var(--vscode-list-hoverBackground); }
@@ -25,7 +26,7 @@ tr[data-line]:hover { background: var(--vscode-list-hoverBackground); }
 .process:hover { border-color: var(--vscode-focusBorder); }
 figure { margin: 1em 0; }
 figcaption { color: var(--vscode-descriptionForeground); text-align: center; font-size: 0.9em; }
-.wavedrom, .fsm { overflow-x: auto; margin: 1em 0; }
+.wavedrom, .fsm, .block { overflow-x: auto; margin: 1em 0; }
 .ok { color: var(--vscode-testing-iconPassed); }
 .bad { color: var(--vscode-errorForeground); font-weight: 600; }
 .warnings { color: var(--vscode-editorWarning-foreground); }
@@ -33,15 +34,15 @@ figcaption { color: var(--vscode-descriptionForeground); text-align: center; fon
 .message-error { border-left-color: var(--vscode-errorForeground); }
 .diagram-error { color: var(--vscode-errorForeground); white-space: pre-wrap; }
 /* Graphviz draws edges in black: use the theme's text colour so they show on a dark background. */
-.fsm svg { max-width: 100%; height: auto; }
-.fsm g.edge path { stroke: var(--vscode-foreground); }
-.fsm g.edge polygon { stroke: var(--vscode-foreground); fill: var(--vscode-foreground); }
-.fsm g.edge text { fill: var(--vscode-foreground); }
-.fsm > svg > g > polygon { fill: transparent; stroke: transparent; }
+:is(.fsm, .block) svg { max-width: 100%; height: auto; }
+:is(.fsm, .block) g.edge path { stroke: var(--vscode-foreground); }
+:is(.fsm, .block) g.edge polygon { stroke: var(--vscode-foreground); fill: var(--vscode-foreground); }
+:is(.fsm, .block) g.edge text { fill: var(--vscode-foreground); }
+:is(.fsm, .block) > svg > g > polygon { fill: transparent; stroke: transparent; }
 /* WaveDrom draws dark-on-light; in a dark theme invert it, keeping the hues. */
 body.vscode-dark .wavedrom svg, body.vscode-high-contrast .wavedrom svg { filter: invert(1) hue-rotate(180deg); }
 /* State names sit on pale node fills chosen by the extractor, so they stay black in every theme. */
-.fsm g.node text { fill: black; }
+:is(.fsm, .block) g.node text { fill: black; }
 #toolbar { position: sticky; top: 0; z-index: 2; display: flex; gap: 0.5em; justify-content: flex-end; padding: 0.5em 0; background: var(--vscode-editor-background); }
 #toolbar button { color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryBackground); border: 1px solid var(--vscode-panel-border); border-radius: 3px; padding: 0.25em 0.8em; cursor: pointer; font-family: inherit; }
 #toolbar button:hover { background: var(--vscode-button-secondaryHoverBackground); }

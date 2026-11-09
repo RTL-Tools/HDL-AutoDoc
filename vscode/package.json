@@ -2,7 +2,7 @@
   "name": "hdl-autodoc",
   "displayName": "HDL-AutoDoc-Lite",
   "description": "Live documentation preview for VHDL and SystemVerilog files, from the same extractors as the HDL AutoDoc site.",
-  "version": "3.21.0",
+  "version": "3.22.0",
   "publisher": "HDL-Tools",
   "icon": "media/icon.png",
   "license": "SEE LICENSE IN ../README.md",
@@ -74,7 +74,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "vsix": "make vsix",
     "test:integration": "node test/integration/run.mjs"
   },

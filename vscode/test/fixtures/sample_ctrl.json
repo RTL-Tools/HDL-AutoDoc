@@ -102,6 +102,9 @@
             "group": null
         }
     ],
+    "block": {
+        "dot": "digraph sample_ctrl_block {\n    rankdir=LR;\n    nodesep=0.5;\n    ranksep=0.8;\n    node [fontname=\"Helvetica\", fontsize=12, shape=none, margin=0];\n    edge [dir=none, penwidth=2.5, color=\"black\"];\n\n    // Generics box\n    gen_box_sample_ctrl [label=<\n        <TABLE BORDER=\"2\" CELLBORDER=\"0\" CELLSPACING=\"3\" CELLPADDING=\"0\" BGCOLOR=\"#c8f5c4\" COLOR=\"#1a5c1a\">\n          <TR><TD PORT=\"g_RUN_CYCLES\" ALIGN=\"LEFT\" CELLPADDING=\"5\">RUN_CYCLES = 1024</TD></TR>\n        </TABLE>>];\n\n    // Ports box\n    port_box_sample_ctrl [label=<\n        <TABLE BORDER=\"2\" CELLBORDER=\"0\" CELLSPACING=\"3\" CELLPADDING=\"0\" BGCOLOR=\"#fffde7\" COLOR=\"#5d4200\">\n          <TR><TD PORT=\"i_clk\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; clk</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_capture_en\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">capture_en &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_rst\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; rst</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_busy\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">busy &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_start\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; start</TD><TD WIDTH=\"50\"> </TD><TD PORT=\"o_state_code\" ALIGN=\"RIGHT\" CELLPADDING=\"5\">state_code &#x25C2;</TD></TR>\n          <TR><TD PORT=\"i_overflow\" ALIGN=\"LEFT\" CELLPADDING=\"5\">&#x25B8; overflow</TD><TD WIDTH=\"50\"> </TD><TD CELLPADDING=\"5\"> </TD></TR>\n        </TABLE>>];\n\n    { rank=same; gen_box_sample_ctrl; port_box_sample_ctrl }\n    gen_box_sample_ctrl -> port_box_sample_ctrl [style=invis, weight=100];\n\n}"
+    },
     "instances": [],
     "processes": [
         {
@@ -205,7 +208,10 @@
             ]
         },
         "crossings": [],
-        "dual_clock_instances": []
+        "dual_clock_instances": [],
+        "lines": {
+            "clk": 18
+        }
     },
     "reset": {
         "processes": [
@@ -221,7 +227,11 @@
                 "p_state_reg"
             ]
         },
-        "crossings": []
+        "crossings": [],
+        "lines": {
+            "clk": 18,
+            "rst": 20
+        }
     },
     "warnings": []
 }

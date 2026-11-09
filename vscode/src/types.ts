@@ -80,6 +80,7 @@ export interface Document {
   module: ModuleInfo | null;
   generics: Generic[];
   ports: Port[];
+  block: { dot: string } | null;                 // Graphviz source of the block diagram
   instances: Instance[];
   processes: ProcessInfo[];
   fsm: Fsm | null;

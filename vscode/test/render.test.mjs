@@ -73,6 +73,22 @@ test('interface ports show the interface and modport', () => {
   assert.match(html, /axis_if\.slave/);
 });
 
+test('the block diagram carries the line of every port and generic, for the panel to link', () => {
+  const html = renderDocument(empty({
+    generics: [{ name: 'W', type: 'positive', default: '8', description: '', line: 3 }],
+    ports: [{ name: 'clk', direction: 'in', type: 'logic', range: '', description: '', line: 7, kind: 'port', interface: null, modport: null, group: null }],
+    block: { dot: 'digraph m_block {}' } }));
+  assert.match(html, /<div class="block" data-lines="\{&quot;W&quot;:3,&quot;clk&quot;:7\}"/);
+});
+
+test('the block diagram is a placeholder with its Graphviz source, under its own heading, before the generics', () => {
+  const html = renderDocument(empty({ generics: [{ name: 'W', type: 'positive', default: '8', description: '', line: 3 }],
+    block: { dot: 'digraph m_block { a -> b; }' } }));
+  assert.match(html, /<h2[^>]*>Block diagram[\s\S]*<div class="block"[^>]* data-dot="digraph m_block \{ a -&gt; b; \}"><\/div>/);
+  assert.ok(html.indexOf('Block diagram') < html.indexOf('Generics'));
+  assert.doesNotMatch(renderDocument(empty({ block: null })), /Block diagram/);
+});
+
 test('the state machine and its rows carry the source line they come from', () => {
   const html = renderDocument(empty({ fsm: { states: ['A', 'B'], dot: 'digraph m {}', line: 9, state_lines: { A: 10, B: 14 },
     transitions: [{ from: 'A', to: 'B', condition: '', line: 11 }, { from: 'B', to: 'A', condition: 'x', line: 15 }] } }));

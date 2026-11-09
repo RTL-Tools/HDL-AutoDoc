@@ -11,6 +11,11 @@ const empty = (over = {}) => ({
 const port = (over = {}) => ({ name: 'p', direction: 'in', type: 'std_logic', range: '', description: '',
   line: 5, kind: 'port', interface: null, modport: null, group: null, ...over });
 
+test('the block diagram is a fenced dot block', () => {
+  const md = renderMarkdown(empty({ block: { dot: 'digraph m_block { a -> b; }' } }));
+  assert.match(md, /## Block diagram\n\n```dot\ndigraph m_block \{ a -> b; \}\n```/);
+});
+
 test('a heading with the module name, then its description', () => {
   const md = renderMarkdown(empty({ module: { name: 'counter', line: 1, description: 'Counts.\n\nMore.', wavedrom: [], mermaid: [] } }));
   assert.match(md, /^# counter\n\nCounts\.\n\nMore\.\n/);

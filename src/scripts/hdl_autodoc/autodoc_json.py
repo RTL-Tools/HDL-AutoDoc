@@ -20,6 +20,7 @@ Document shape:
     generics   [{name, type, default, description, line}]            (parameters for SV)
     ports      [{name, direction, type, range, description, line, kind, interface,
                  modport, group}]       kind "port" | "interface"; group = bus-group label
+    block      {dot} | null
     instances  [{instance, component, kind, line}]                   kind "module" | "interface"
     processes  [{label, kind, line, sensitivity, description, wavedrom: [str], mermaid: [...]}]
     fsm        {states, line, state_lines: {state: line}, transitions: [{from, to, condition, line}], dot} | null
@@ -158,11 +159,25 @@ def _fsm(text: str, vhdl: bool, name: str) -> dict | None:
             "dot": extract_fsm.write_dot(transitions, states, safe_id(name))}
 
 
+def _block(text: str, vhdl: bool, name: str, interface_names: set[str]) -> dict | None:
+    """The site's block diagram (Graphviz source) for the module, drawn by the panel."""
+    if vhdl:
+        ports, generics, instances = (extract_block.extract_ports_vhdl(text),
+                                      extract_block.extract_generics_vhdl(text), [])
+    else:
+        ports = extract_block.extract_ports_sv(text, interface_names or None)
+        generics = extract_block.extract_params_sv(text)
+        instances = extract_block.extract_interface_instances_sv(text, interface_names)
+    if not ports and not generics:
+        return None
+    return {"dot": extract_block.write_dot_block(name, ports, generics, instances)}
+
+
 def _first_lines(blanked: str, names) -> dict[str, int]:
     """{name: line of its first mention outside comments}: normally the port or declaration,
     since a declaration comes before use.  Names that do not appear are left out."""
     found = {}
-    for name in names:
+    for name in sorted(names):               # sorted: the same file always gives the same JSON
         m = re.search(rf"(?<!\w){re.escape(name)}(?!\w)", blanked)
         if m:
             found[name] = blanked.count("\n", 0, m.start()) + 1
@@ -216,6 +231,7 @@ def build_document(text: str, language: str, support_files=(), bus_groups: Path 
         "module": module,
         "generics": section("generics", lambda: _generics(text, vhdl), []),
         "ports": section("ports", lambda: _ports(text, vhdl, interface_names, bus_groups), []),
+        "block": section("block", lambda: _block(text, vhdl, module["name"], interface_names) if module else None, None),
         "instances": section("instances", lambda: _instances(text, blanked, vhdl, interface_names), []),
         "processes": section("processes", lambda: _processes(lines, vhdl), []),
         "fsm": section("fsm", lambda: _fsm(text, vhdl, module["name"] if module else "fsm"), None),

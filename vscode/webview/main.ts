@@ -90,7 +90,7 @@ async function drawDiagrams(root: HTMLElement, dark: boolean): Promise<void> {
 }
 
 async function drawStateMachines(root: HTMLElement): Promise<void> {
-  const elements = [...root.querySelectorAll<HTMLElement>('.fsm')];
+  const elements = [...root.querySelectorAll<HTMLElement>('[data-dot]')];
   if (elements.length === 0) return;
   await loadScript('viz-global.js');
   const viz = await Viz.instance();
@@ -102,6 +102,12 @@ async function drawStateMachines(root: HTMLElement): Promise<void> {
         const line = lines[node.querySelector('title')?.textContent ?? ''];
         if (line) node.setAttribute('data-line', String(line));
       });
+      if (element.classList.contains('block')) {            // a port or generic in the block diagram jumps to its declaration
+        svg.querySelectorAll('text').forEach((label) => {
+          const name = (label.textContent ?? '').replace(/[▸◂]/g, '').trim().split(/\s+/)[0] ?? '';
+          if (lines[name]) label.setAttribute('data-line', String(lines[name]));
+        });
+      }
       element.replaceChildren(svg);
     } catch (error) {
       showError(element, 'Graphviz', error);
