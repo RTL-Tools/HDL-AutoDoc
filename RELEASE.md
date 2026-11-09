@@ -1,5 +1,17 @@
 # Release Notes
 
+## v3.20.0
+
+#### New features
+
+- **VS Code extension: the state machine is clickable** — a state's circle in the diagram jumps to its `when` arm (or `NAME:` label in SystemVerilog), a row of the transition table jumps to the line that assigns the next state, and the rest of the diagram jumps to the `case`. `autodoc_json.py` reports the line of the `case`, of each state (`state_lines`) and of each transition; the site build does not use them.
+
+#### Compatibility
+
+- Backwards compatible: `extract_transitions_*` return what they did before, and the generated site is unchanged. Consumers of `autodoc_json.py` get extra `line` fields in `fsm`.
+
+---
+
 ## v3.19.0
 
 #### New features

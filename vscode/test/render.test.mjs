@@ -73,11 +73,19 @@ test('interface ports show the interface and modport', () => {
   assert.match(html, /axis_if\.slave/);
 });
 
+test('the state machine and its rows carry the source line they come from', () => {
+  const html = renderDocument(empty({ fsm: { states: ['A', 'B'], dot: 'digraph m {}', line: 9, state_lines: { A: 10, B: 14 },
+    transitions: [{ from: 'A', to: 'B', condition: '', line: 11 }, { from: 'B', to: 'A', condition: 'x', line: 15 }] } }));
+  assert.match(html, /<div class="fsm"[^>]*data-line="9"[^>]*data-lines="\{&quot;A&quot;:10,&quot;B&quot;:14\}"/);
+  assert.match(html, /<tr data-line="11">\s*<td>A<\/td>/);
+  assert.match(html, /<tr data-line="15">\s*<td>B<\/td>/);
+});
+
 test('the state machine is a placeholder with its Graphviz source, plus a transition table', () => {
   const dot = 'digraph m { A -> B [label="mode = \\"01\\""]; }';
-  const html = renderDocument(empty({ fsm: { states: ['A', 'B'], dot,
-    transitions: [{ from: 'A', to: 'B', condition: "x = '1'" }, { from: 'B', to: 'A', condition: '' }] } }));
-  assert.match(html, /<div class="fsm" data-dot="digraph m \{ A -&gt; B \[label=&quot;mode = \\&quot;01\\&quot;&quot;\]; \}"/);
+  const html = renderDocument(empty({ fsm: { states: ['A', 'B'], dot, line: 1, state_lines: {},
+    transitions: [{ from: 'A', to: 'B', condition: "x = '1'", line: 2 }, { from: 'B', to: 'A', condition: '', line: 3 }] } }));
+  assert.match(html, /<div class="fsm"[^>]* data-dot="digraph m \{ A -&gt; B \[label=&quot;mode = \\&quot;01\\&quot;&quot;\]; \}"/);
   assert.match(html, /<td>A<\/td>\s*<td>B<\/td>\s*<td><code>x = &#39;1&#39;<\/code><\/td>/);
   assert.match(html, /always/);
 });

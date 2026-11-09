@@ -38,6 +38,7 @@ DEFAULT_COLOUR = "white"
 # ─────────────────────────────────────────────────────────────────────────────
 
 from hdl_scan import matching_paren
+from hdl_text import blank_sv_comments, blank_vhdl_comments
 from hdl_text import strip_sv_comments, strip_vhdl_comments  # noqa: F401  (re-exported)
 
 def normalise(text: str) -> str:
@@ -48,34 +49,35 @@ def normalise(text: str) -> str:
 # VHDL extraction
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _vhdl_fsm_case(text: str) -> tuple[str, str] | None:
-    """(case body, state signal) of the first `case` whose arms assign one signal to the
-    names of the arms themselves, whatever the selector and the signal are called, or None.
-    `text` is normalised (comments stripped, lower case)."""
+def _vhdl_fsm_case(text: str) -> tuple[str, str, int, int] | None:
+    """(case body, state signal, index of the body, index of the `case`) of the first `case`
+    whose arms assign one signal to the names of the arms themselves, whatever the selector
+    and the signal are called, or None.  `text` is lower case with its comments blanked."""
     for m in re.finditer(r"case\s+\w+\s+is\s+(.*?)\s+end\s+case", text, re.DOTALL):
         body = m.group(1)
         names = {a.group(1) for c in re.split(r"\bwhen\b", body)
                  if (a := re.match(r"\s*(\w+)\s*=>", c))} - {"others"}
         for a in re.finditer(r"(\w+)\s*<=\s*(\w+)\s*;", body):
             if a.group(2) in names:
-                return body, a.group(1)
+                return body, a.group(1), m.start(1), m.start()
     return None
 
 
-def _vhdl_arm_transitions(from_state: str, clause: str, sig: str) -> list[tuple[str, str, str]]:
-    """The transitions one case arm makes.  The condition is the enclosing `if`/`elsif`
-    conditions joined by `and`; an `else` branch is `not (...)` of the branches before it."""
-    found: list[tuple[str, str, str]] = []
+def _vhdl_arm_transitions(from_state: str, clause: str, sig: str) -> list[tuple[str, str, str, int]]:
+    """The transitions one case arm makes, as (from, to, condition, index in `clause`).  The
+    condition is the enclosing `if`/`elsif` conditions joined by `and`; an `else` branch is
+    `not (...)` of the branches before it."""
+    found: list[tuple[str, str, str, int]] = []
     stack: list[dict] = []                       # one frame per open `if`
     token = re.compile(
         r"\bif\s+(?P<if>(?:(?!\bthen\b).)+?)\s+then\b|\belsif\s+(?P<elsif>(?:(?!\bthen\b).)+?)\s+then\b"
         rf"|\b(?P<else>else)\b|\b(?P<end>end\s+if)\b|\b{sig}\s*<=\s*(?P<to>\w+)", re.DOTALL)
     for m in token.finditer(clause):
         if m["if"]:
-            stack.append({"prior": [], "cur": m["if"].strip()})
+            stack.append({"prior": [], "cur": normalise(m["if"])})
         elif m["elsif"] and stack:
             stack[-1]["prior"].append(stack[-1]["cur"])
-            stack[-1]["cur"] = m["elsif"].strip()
+            stack[-1]["cur"] = normalise(m["elsif"])
         elif m["else"] and stack:
             f = stack[-1]
             f["cur"] = "not (" + " or ".join(f["prior"] + [f["cur"]]) + ")"
@@ -85,33 +87,43 @@ def _vhdl_arm_transitions(from_state: str, clause: str, sig: str) -> list[tuple[
         elif m["to"]:
             to, cond = m["to"].upper(), " and ".join(f["cur"] for f in stack)
             if cond or to != from_state:
-                found.append((from_state, to, cond))
+                found.append((from_state, to, cond, m.start()))
     return found
 
 
-def extract_transitions_vhdl(vhd_text: str) -> list[tuple[str,str,str]]:
-    found = _vhdl_fsm_case(normalise(strip_vhdl_comments(vhd_text)))
+def _scan_vhdl(vhd_text: str):
+    """(blanked lower-case text, {"case", "states": [(name, index)], "transitions":
+    [(from, to, condition, index)]}), or None when there is no state machine.  Indexes are
+    into the text, so line numbers survive."""
+    text = blank_vhdl_comments(vhd_text).lower()
+    found = _vhdl_fsm_case(text)
     if not found:
-        return []  # No FSM in this file
-    body, sig = found
-
-    transitions = []
-    for clause in re.split(r"\bwhen\b", body):
-        clause = clause.strip()
-        if not clause or clause.startswith("others"):
-            continue
-        state_m = re.match(r"(\w+)\s*=>", clause)
-        if not state_m:
+        return None
+    body, sig, body_at, case_at = found
+    scan = {"case": case_at, "states": [], "transitions": []}
+    whens = list(re.finditer(r"\bwhen\b", body))
+    for i, w in enumerate(whens):
+        end = whens[i + 1].start() if i + 1 < len(whens) else len(body)
+        clause = body[w.end():end]
+        state_m = re.match(r"\s*(\w+)\s*=>", clause)
+        if not state_m or state_m.group(1) == "others":
             continue
         from_state = state_m.group(1).upper()
-        transitions += _vhdl_arm_transitions(from_state, clause, sig)
-    return transitions
+        scan["states"].append((from_state, body_at + w.start()))
+        scan["transitions"] += [(f, t, c, body_at + w.end() + at)
+                                for f, t, c, at in _vhdl_arm_transitions(from_state, clause, sig)]
+    return text, scan
+
+
+def extract_transitions_vhdl(vhd_text: str) -> list[tuple[str,str,str]]:
+    found = _scan_vhdl(vhd_text)
+    return [t[:3] for t in found[1]["transitions"]] if found else []
 
 
 def extract_outputs_vhdl(vhd_text: str) -> dict:
     ASSIGN_RE = re.compile(r"(\w+)\s*<=\s*'([01])'")
     WHEN_RE   = re.compile(r"^\s*when\s+(\w+)\s*=>", re.IGNORECASE)
-    found = _vhdl_fsm_case(normalise(strip_vhdl_comments(vhd_text)))
+    found = _vhdl_fsm_case(blank_vhdl_comments(vhd_text).lower())
     state_assign = re.compile(rf"\b{found[1]}\s*<=", re.IGNORECASE) if found else None
     processes = re.findall(
         r":\s*process\b.*?end\s+process", vhd_text, re.IGNORECASE | re.DOTALL
@@ -152,8 +164,8 @@ _SV_DEPTH_TOKENS = re.compile(r"\bbegin\b|\bend\b|\bcase[xz]?\b|\bendcase\b|[()]
 _SV_ARM_LABEL = re.compile(r"(?<![\w:])(\w+(?:\s*,\s*\w+)*)\s*:(?!:)")
 
 
-def _sv_case_body(text: str) -> tuple[str, str] | None:
-    """(body, state signal) of the first `case` whose arms assign one signal to the names of
+def _sv_case_body(text: str) -> tuple[str, str, int, int] | None:
+    """(body, state signal, index of the body, index of the `case`) of the first `case` whose arms assign one signal to the names of
     the arms themselves, whatever the selector and the signal are called (nested cases and
     parentheses in the selector are handled), or None."""
     for m in re.finditer(r"\bcase[xz]?\s*\(", text, re.IGNORECASE):
@@ -165,19 +177,19 @@ def _sv_case_body(text: str) -> tuple[str, str] | None:
             depth += 1 if t.group(0).lower() != "endcase" else -1
             if depth == 0:
                 body = text[close + 1:close + 1 + t.start()]
-                names = {n.upper() for labels, _ in _sv_arms(body)
+                names = {n.upper() for labels, _, _, _ in _sv_arms(body)
                          for n in re.split(r"\s*,\s*", labels)} - {"DEFAULT"}
                 for a in re.finditer(r"(\w+)\s*(?:<=|=)(?!=)\s*([^;]+);", body):
                     value = a.group(2).strip()          # a name, or `cond ? NAME : NAME`
                     tern = re.fullmatch(r".+?\?\s*(\w+)\s*:\s*(\w+)", value, re.DOTALL)
                     if {w.upper() for w in (tern.groups() if tern else [value])} & names:
-                        return body, a.group(1)
+                        return body, a.group(1), close + 1, m.start()
                 break
     return None
 
 
-def _sv_arms(body: str) -> list[tuple[str, str]]:
-    """[(label, arm text)] for the arms of a case body.  A label is `NAME:` at the start
+def _sv_arms(body: str) -> list[tuple[str, str, int, int]]:
+    """[(label, arm text, index of the label, index of the arm text)] for the arms of a case body.  A label is `NAME:` at the start
     of a statement outside any begin/end, nested case or parentheses, so the colon of a
     ternary (`a ? B : C`) is not one."""
     depth_at: list[tuple[int, int]] = []          # (position, depth after the token)
@@ -202,14 +214,14 @@ def _sv_arms(body: str) -> list[tuple[str, str]]:
                               or re.search(r"\bend$", before, re.IGNORECASE) is not None)
         if at_statement_start and depth_before(m.start()) == 0:
             starts.append(m)
-    return [(m.group(1), body[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(body)])
+    return [(m.group(1), body[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(body)], m.start(), m.end())
             for i, m in enumerate(starts)]
 
 
-def _sv_arm_transitions(from_state: str, arm: str, sig: str) -> list[tuple[str, str, str]]:
-    """The transitions one case arm makes: `if (cond) state = X`, a ternary
-    assignment, and bare assignments."""
-    found: list[tuple[str, str, str]] = []
+def _sv_arm_transitions(from_state: str, arm: str, sig: str) -> list[tuple[str, str, str, int]]:
+    """The transitions one case arm makes, as (from, to, condition, index in `arm`): `if (cond)
+    state = X`, a ternary assignment, and bare assignments."""
+    found: list[tuple[str, str, str, int]] = []
     consumed: list[tuple[int, int]] = []
     assign = re.compile(rf"\b{sig}\s*(?:<=|=)\s*([^;]+);", re.IGNORECASE)
 
@@ -221,7 +233,7 @@ def _sv_arm_transitions(from_state: str, arm: str, sig: str) -> list[tuple[str, 
         rest = re.match(r"\s*(?:begin\b\s*)?", arm[close + 1:], re.IGNORECASE)
         a = assign.match(arm, close + 1 + rest.end())
         if a:
-            found.append((from_state, a.group(1).strip().upper(), cond))
+            found.append((from_state, a.group(1).strip().upper(), cond, a.start()))
             consumed.append((m.start(), a.end()))
 
     for m in assign.finditer(arm):
@@ -232,29 +244,52 @@ def _sv_arm_transitions(from_state: str, arm: str, sig: str) -> list[tuple[str, 
         if tern:
             cond, yes, no = tern.group(1).strip(), tern.group(2).upper(), tern.group(3).upper()
             if yes != from_state:
-                found.append((from_state, yes, cond))
+                found.append((from_state, yes, cond, m.start()))
             if no != from_state:
-                found.append((from_state, no, f"!({cond})"))
+                found.append((from_state, no, f"!({cond})", m.start()))
         elif re.fullmatch(r"\w+", value) and value.upper() != from_state:
-            found.append((from_state, value.upper(), ""))
+            found.append((from_state, value.upper(), "", m.start()))
     return found
 
 
-def extract_transitions_sv(sv_text: str) -> list[tuple[str,str,str]]:
-    # Work on comment-stripped text only — do NOT normalise (normalise lowercases
-    # state names which breaks the label splitter)
-    found = _sv_case_body(strip_sv_comments(sv_text))
+def _scan_sv(sv_text: str):
+    """(blanked text, {"case", "states", "transitions"}) as _scan_vhdl, or None."""
+    text = blank_sv_comments(sv_text)
+    found = _sv_case_body(text)
     if found is None:
-        return []  # No FSM in this file
-    body, sig = found
-
-    transitions: list[tuple[str, str, str]] = []
-    for labels, arm in _sv_arms(body):
+        return None
+    body, sig, body_at, case_at = found
+    scan = {"case": case_at, "states": [], "transitions": []}
+    for labels, arm, at, arm_at in _sv_arms(body):
         for label in re.split(r"\s*,\s*", labels):
             if label.lower() == "default":
                 continue
-            transitions += _sv_arm_transitions(label.upper(), arm, sig)
-    return transitions
+            scan["states"].append((label.upper(), body_at + at))
+            scan["transitions"] += [(f, t, c, body_at + arm_at + x)
+                                    for f, t, c, x in _sv_arm_transitions(label.upper(), arm, sig)]
+    return text, scan
+
+
+def extract_transitions_sv(sv_text: str) -> list[tuple[str,str,str]]:
+    found = _scan_sv(sv_text)
+    return [t[:3] for t in found[1]["transitions"]] if found else []
+
+
+def locate_fsm(text: str, vhdl: bool) -> dict | None:
+    """Where the state machine is in the source: {"case": line of the `case`, "states":
+    {name: line of its arm}, "transitions": [line of each assignment, in the order
+    extract_transitions_* returns them]}, or None when there is no state machine."""
+    found = _scan_vhdl(text) if vhdl else _scan_sv(text)
+    if found is None:
+        return None
+    blanked, scan = found
+
+    def line(index: int) -> int:
+        return blanked.count("\n", 0, index) + 1
+
+    return {"case": line(scan["case"]),
+            "states": {name: line(at) for name, at in reversed(scan["states"])},
+            "transitions": [line(t[3]) for t in scan["transitions"]]}
 
 
 def extract_outputs_sv(sv_text: str) -> dict:
@@ -263,7 +298,7 @@ def extract_outputs_sv(sv_text: str) -> dict:
     CASE_RE   = re.compile(r"case\s*\(\s*\w+\s*\)(.*?)endcase", re.DOTALL | re.IGNORECASE)
     WHEN_RE   = re.compile(r"([A-Z_][A-Z0-9_]*)\s*:", re.IGNORECASE)
 
-    found = _sv_case_body(strip_sv_comments(sv_text))
+    found = _sv_case_body(blank_sv_comments(sv_text))
     state_assign = re.compile(rf"\b{found[1]}\s*(?:<=|=)", re.IGNORECASE) if found else None
     blocks = re.findall(
         r"always_comb\b.*?(?=always_|endmodule)", sv_text, re.DOTALL | re.IGNORECASE

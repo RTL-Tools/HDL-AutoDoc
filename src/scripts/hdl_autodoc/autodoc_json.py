@@ -22,7 +22,7 @@ Document shape:
                  modport, group}]       kind "port" | "interface"; group = bus-group label
     instances  [{instance, component, kind, line}]                   kind "module" | "interface"
     processes  [{label, kind, line, sensitivity, description, wavedrom: [str], mermaid: [...]}]
-    fsm        {states, transitions: [{from, to, condition}], dot} | null
+    fsm        {states, line, state_lines: {state: line}, transitions: [{from, to, condition, line}], dot} | null
     cdc        {domains: {clock: [process]}, crossings, dual_clock_instances} | null
     reset      {processes, domains: {reset: [process]}, crossings} | null
     warnings   [str]
@@ -151,8 +151,10 @@ def _fsm(text: str, vhdl: bool, name: str) -> dict | None:
     if not transitions:
         return None
     states = extract_fsm.collect_states(transitions)
-    return {"states": states,
-            "transitions": [{"from": a, "to": b, "condition": c} for a, b, c in transitions],
+    where = extract_fsm.locate_fsm(text, vhdl)
+    return {"states": states, "line": where["case"], "state_lines": where["states"],
+            "transitions": [{"from": a, "to": b, "condition": c, "line": n}
+                            for (a, b, c), n in zip(transitions, where["transitions"])],
             "dot": extract_fsm.write_dot(transitions, states, safe_id(name))}
 
 

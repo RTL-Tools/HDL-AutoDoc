@@ -116,7 +116,13 @@ def test_fsm_has_states_transitions_and_graphviz_source():
     doc = build_document((ROOT / "example_full/src/sample_ctrl.vhd").read_text(), "vhdl")
     fsm = doc["fsm"]
     assert {"IDLE", "ARMED", "RUN", "DONE"} <= set(fsm["states"])
-    assert {"from": "IDLE", "to": "ARMED", "condition": "start = '1'"} in fsm["transitions"]
+    assert {"from": "IDLE", "to": "ARMED", "condition": "start = '1'"} in [
+        {k: t[k] for k in ("from", "to", "condition")} for t in fsm["transitions"]]
+    source = (ROOT / "example_full/src/sample_ctrl.vhd").read_text().split("\n")
+    for t in fsm["transitions"]:                    # every transition, state and the case know their line
+        assert f"<= {t['to']}" in source[t["line"] - 1].upper()
+    assert source[fsm["line"] - 1].strip().lower().startswith("case")
+    assert source[fsm["state_lines"]["RUN"] - 1].strip().lower().startswith("when run")
     assert fsm["dot"].startswith("digraph")
 
 

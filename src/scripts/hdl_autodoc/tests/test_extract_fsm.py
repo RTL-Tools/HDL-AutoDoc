@@ -16,6 +16,7 @@ from extract_fsm import (
     collect_states,
     extract_outputs_sv,
     extract_outputs_vhdl,
+    locate_fsm,
     extract_transitions_sv,
     extract_transitions_vhdl,
     write_dot,
@@ -238,6 +239,36 @@ def test_vhdl_state_assignments_inside_nested_if_else_are_all_found():
     assert ("S_RUN", "S_DONE", "ready = '1'") in got
     assert ("S_RUN", "S_IDLE", "abort = '1'") in got
     assert ("S_DONE", "S_IDLE", "") in got
+
+
+def test_vhdl_fsm_lines_point_into_the_fsm_process_whatever_the_order():
+    text = _vhdl(_VHDL_LOGIC, _VHDL_FSM_ONE_PROCESS)
+    lines = text.split("\n")
+    where = locate_fsm(text, vhdl=True)
+    assert lines[where["case"] - 1].strip() == "case curr_st is" and where["case"] > len(_VHDL_LOGIC.split("\n"))
+    assert lines[where["states"]["S_RUN"] - 1].strip().startswith("when S_RUN")
+    for (frm, to, _), line in zip(extract_transitions_vhdl(text), where["transitions"]):
+        assert f"<= {to}" in lines[line - 1], (frm, to, lines[line - 1])
+
+
+def test_vhdl_fsm_lines_ignore_commented_out_code():
+    text = _vhdl("  -- case curr_st is when S_RUN => curr_st <= S_DONE;\n", _VHDL_FSM_ONE_PROCESS)
+    where = locate_fsm(text, vhdl=True)
+    assert text.split("\n")[where["case"] - 1].strip() == "case curr_st is"
+
+
+def test_sv_fsm_lines_point_at_the_arms_and_assignments():
+    text = "module m;\n" + _SV_LOGIC + _SV_FSM_ONE_PROCESS + "endmodule\n"
+    lines = text.split("\n")
+    where = locate_fsm(text, vhdl=False)
+    assert lines[where["case"] - 1].strip() == "case (curr_st)" and "always_ff" in lines[where["case"] - 2]
+    assert lines[where["states"]["S_DONE"] - 1].strip().startswith("S_DONE:")
+    for (frm, to, _), line in zip(extract_transitions_sv(text), where["transitions"]):
+        assert f"<= {to}" in lines[line - 1]
+
+
+def test_locate_fsm_is_none_without_an_fsm():
+    assert locate_fsm("entity foo is port (); end entity foo;\n", vhdl=True) is None
 
 
 def test_a_case_that_assigns_no_state_is_not_an_fsm():

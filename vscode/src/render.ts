@@ -74,8 +74,9 @@ function instances(list: Instance[]): string {
 
 function fsm(f: Fsm): string {
   const rows = f.transitions.map((t) =>
-    `<tr><td>${esc(t.from)}</td><td>${esc(t.to)}</td><td>${t.condition ? `<code>${esc(t.condition)}</code>` : 'always'}</td></tr>`);
-  return `<div class="fsm" data-dot="${esc(f.dot)}"></div>\n${table(['From', 'To', 'When'], rows)}`;
+    `<tr data-line="${t.line}"><td>${esc(t.from)}</td><td>${esc(t.to)}</td><td>${t.condition ? `<code>${esc(t.condition)}</code>` : 'always'}</td></tr>`);
+  // the webview puts each state's line on its node once Graphviz has drawn it
+  return `<div class="fsm" data-line="${f.line}" data-lines="${esc(JSON.stringify(f.state_lines))}" data-dot="${esc(f.dot)}"></div>\n${table(['From', 'To', 'When'], rows)}`;
 }
 
 function processes(list: ProcessInfo[]): string {

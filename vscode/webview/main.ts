@@ -96,7 +96,13 @@ async function drawStateMachines(root: HTMLElement): Promise<void> {
   const viz = await Viz.instance();
   for (const element of elements) {
     try {
-      element.replaceChildren(viz.renderSVGElement(element.dataset.dot ?? ''));
+      const svg = viz.renderSVGElement(element.dataset.dot ?? '');
+      const lines = JSON.parse(element.dataset.lines ?? '{}') as Record<string, number>;
+      svg.querySelectorAll('g.node').forEach((node) => {     // a state's circle jumps to its arm in the source
+        const line = lines[node.querySelector('title')?.textContent ?? ''];
+        if (line) node.setAttribute('data-line', String(line));
+      });
+      element.replaceChildren(svg);
     } catch (error) {
       showError(element, 'Graphviz', error);
     }

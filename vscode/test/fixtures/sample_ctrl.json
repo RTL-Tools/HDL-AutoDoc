@@ -157,31 +157,43 @@
             "RUN",
             "DONE"
         ],
+        "line": 119,
+        "state_lines": {
+            "DONE": 135,
+            "RUN": 128,
+            "ARMED": 125,
+            "IDLE": 120
+        },
         "transitions": [
             {
                 "from": "IDLE",
                 "to": "ARMED",
-                "condition": "start = '1'"
+                "condition": "start = '1'",
+                "line": 122
             },
             {
                 "from": "ARMED",
                 "to": "RUN",
-                "condition": ""
+                "condition": "",
+                "line": 126
             },
             {
                 "from": "RUN",
                 "to": "DONE",
-                "condition": "run_last = '1'"
+                "condition": "run_last = '1'",
+                "line": 130
             },
             {
                 "from": "RUN",
                 "to": "DONE",
-                "condition": "overflow = '1'"
+                "condition": "overflow = '1'",
+                "line": 132
             },
             {
                 "from": "DONE",
                 "to": "IDLE",
-                "condition": "start = '0'"
+                "condition": "start = '0'",
+                "line": 137
             }
         ],
         "dot": "digraph sample_ctrl {\n    rankdir=LR;\n    node [shape=circle, style=filled, fontname=Helvetica, fontsize=12];\n    edge [fontname=Helvetica, fontsize=10];\n\n    __start [shape=point, width=0.2, fillcolor=black];\n\n    IDLE [fillcolor=lightblue];\n    ARMED [fillcolor=white];\n    RUN [fillcolor=white];\n    DONE [fillcolor=lightgreen];\n\n    __start -> IDLE [label=\"reset\"];\n\n    IDLE -> ARMED [label=\"start = '1'\"];\n    ARMED -> RUN [label=\"always\"];\n    RUN -> DONE [label=\"run_last = '1'\"];\n    RUN -> DONE [label=\"overflow = '1'\"];\n    DONE -> IDLE [label=\"start = '0'\"];\n}"

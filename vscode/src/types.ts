@@ -55,7 +55,9 @@ export interface ProcessInfo {
 
 export interface Fsm {
   states: string[];
-  transitions: { from: string; to: string; condition: string }[];
+  line: number;                                  // the `case`
+  state_lines: Record<string, number>;           // each state's arm
+  transitions: { from: string; to: string; condition: string; line: number }[];
   dot: string;
 }
 
